@@ -1,0 +1,69 @@
+[
+  {
+    "date": "2026-04-08",
+    "title": "Last Minute Comedy",
+    "description": "Live Comedy Show Every Wednesday",
+    "id": "1775582555499",
+    "startTime": "20:00",
+    "endTime": "",
+    "imageUrl": "/uploads/1775598215459-lastminutecom.jpg"
+  },
+  {
+    "date": "2026-04-09",
+    "title": "Open Mic Night",
+    "time": "8:00 PM",
+    "description": "Starting 8pm Every Thursday",
+    "id": "1775584723184",
+    "startTime": "20:00",
+    "endTime": "11:00",
+    "imageUrl": "/uploads/1775598320421-openmic.jpg"
+  },
+  {
+    "id": "1775598943953",
+    "title": "Karaoke",
+    "date": "2026-04-12",
+    "startTime": "20:00",
+    "endTime": "00:00",
+    "description": "Karaoke every Sunday night",
+    "imageUrl": "/uploads/1775598943951-660465337_10230388240681207_8404282441325245608_n.jpg"
+  },
+  {
+    "id": "1775599161022",
+    "title": "Traditional Music Session",
+    "date": "2026-04-11",
+    "startTime": "20:00",
+    "endTime": "23:00",
+    "description": "Live and unplugged newfoundland traditional music every Saturday",
+    "imageUrl": "/uploads/1775599161020-trad_music_session.jpg"
+  },
+  {
+    "id": "1775836366866",
+    "title": "Last Minute Comedy",
+    "date": "2026-04-15",
+    "startTime": "20:00",
+    "endTime": "",
+    "description": "Live Comedy Show Every Wednesday",
+    "imageUrl": "/uploads/1775598215459-lastminutecom.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1775836401663",
+    "title": "Open Mic Night",
+    "date": "2026-04-16",
+    "startTime": "20:00",
+    "endTime": "11:00",
+    "description": "Starting 8pm Every Thursday",
+    "imageUrl": "/uploads/1775598320421-openmic.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1775837875566",
+    "title": "Barely There Presents!",
+    "date": "2026-04-17",
+    "startTime": "22:00",
+    "endTime": "",
+    "description": "Albert Dalton, Little Fauna, Big Diamond and Brandon Coaker Band",
+    "imageUrl": "/uploads/1775837875564-659576525_18084052973600349_4184302831340728341_n.jpg",
+    "isRecurring": false
+  }
+]
