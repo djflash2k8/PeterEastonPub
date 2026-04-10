@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "title": "Our Story",
+    "content": "Peter Easton's Pub has been a beloved local establishment for over 30 years, known for its warm atmosphere, live music, and friendly faces. Founded by Peter Easton himself, our pub started as a small dream to create a community hub where everyone feels welcome.\n\nOver the decades, we've hosted countless memorable nights, from lively karaoke sessions to intimate acoustic performances. We pride ourselves on serving great food, a wide selection of beverages, and most importantly, fostering a sense of belonging for all our patrons.",
+    "imageUrl": "/uploads/about_story.jpg",
+    "createdAt": "2023-01-15T10:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "title": "Our Philosophy",
+    "content": "At Peter Easton's, we believe in the simple pleasures of life: good company, good food, and good music. Our philosophy is built on community, respect, and genuine hospitality. We strive to be more than just a pub; we aim to be a cornerstone of the neighborhood, a place where friendships are forged and memories are made.\n\nWe are committed to supporting local artists, sourcing fresh ingredients, and continuously improving our offerings to ensure every visit is a delightful experience. Come on down and be a part of our story!",
+    "imageUrl": "/uploads/about_philosophy.jpg",
+    "createdAt": "2023-03-20T14:30:00.000Z"
+  }
+]
