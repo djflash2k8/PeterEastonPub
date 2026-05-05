@@ -44,8 +44,8 @@ export default function Home() {
           const today = new Date().toISOString().split('T')[0]
           
           const nextEvent = events
-            .filter(e => e.date >= today)
-            .sort((a, b) => {
+            .filter((e: any) => e.date >= today)
+            .sort((a: any, b: any) => {
               const aDate = new Date(`${a.date}T${a.startTime || '00:00'}`)
               const bDate = new Date(`${b.date}T${b.startTime || '00:00'}`)
               return aDate.getTime() - bDate.getTime()
@@ -70,7 +70,7 @@ export default function Home() {
         <main className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="text-center py-12">
-              <p className="text-gray-500">Loading...</p>
+              <p className="dynamic-secondary-text">Loading...</p>
             </div>
           </div>
         </main>
@@ -90,23 +90,19 @@ export default function Home() {
             
             {/* Main Content - Takes priority on mobile */}
             <div className="flex-1 order-1 lg:order-1">
-              <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
+              <div className="dynamic-bg rounded-lg shadow-sm p-4 sm:p-6">
+                <h1 className="text-2xl sm:text-3xl font-bold dynamic-text mb-4">
                   {content.welcomeTitle}
                 </h1>
                 <div className="space-y-4">
-                  <p className="text-lg text-gray-700">
+                  <p className="text-lg dynamic-secondary-text">
                     {content.welcomeDescription}
                   </p>
                   <div className="flex flex-wrap gap-2 sm:gap-4">
                     {(content.tags || []).map((tag, index) => (
                       <span 
                         key={index}
-                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                          index === 0 ? 'bg-blue-100 text-blue-800' :
-                          index === 1 ? 'bg-green-100 text-green-800' :
-                          'bg-purple-100 text-purple-800'
-                        }`}
+                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium dynamic-accent-text`}
                       >
                         {tag}
                       </span>
@@ -119,8 +115,8 @@ export default function Home() {
                     {/* Next Event Section */}
                     {nextEvent && (
                       <section className="border-t pt-6">
-                        <h2 className="text-xl font-semibold mb-3">Next Event</h2>
-                        <div className="bg-gray-50 p-4 rounded-lg">
+                        <h2 className="text-xl font-semibold dynamic-text mb-3">Next Event</h2>
+                        <div className="dynamic-bg p-4 rounded-lg">
                           <div className="flex flex-col sm:flex-row gap-4">
                             {nextEvent.imageUrl && (
                               <div className="flex-shrink-0">
@@ -132,19 +128,19 @@ export default function Home() {
                               </div>
                             )}
                             <div className="flex-1">
-                              <h3 className="font-bold text-lg mb-2">{nextEvent.title}</h3>
+                              <h3 className="font-bold text-lg dynamic-text mb-2">{nextEvent.title}</h3>
                               <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <span className="inline-block bg-blue-600 text-white px-2 py-1 rounded text-sm font-medium">
+                                <span className="inline-block dynamic-accent-text px-2 py-1 rounded text-sm font-medium">
                                   {nextEvent.date}
                                 </span>
                                 {nextEvent.startTime && (
-                                  <span className="inline-block bg-red-600 text-white px-2 py-1 rounded text-sm font-medium">
+                                  <span className="inline-block dynamic-alt-text px-2 py-1 rounded text-sm font-medium">
                                     {nextEvent.startTime}
                                     {nextEvent.endTime ? ` - ${nextEvent.endTime}` : ''}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-gray-600 text-sm">{nextEvent.description}</p>
+                              <p className="dynamic-secondary-text text-sm">{nextEvent.description}</p>
                             </div>
                           </div>
                         </div>
@@ -152,19 +148,19 @@ export default function Home() {
                     )}
 
                     <section className="border-t pt-6">
-                      <h2 className="text-xl font-semibold mb-3">{content.aboutTitle}</h2>
-                      <p className="text-gray-600 leading-relaxed">
+                      <h2 className="text-xl font-semibold dynamic-text mb-3">{content.aboutTitle}</h2>
+                      <p className="dynamic-secondary-text leading-relaxed">
                         {content.aboutContent}
                       </p>
                     </section>
                     
                     <section className="border-t pt-6">
-                      <h2 className="text-xl font-semibold mb-3">{content.whatWeOfferTitle}</h2>
+                      <h2 className="text-xl font-semibold dynamic-text mb-3">{content.whatWeOfferTitle}</h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {(content.offerings || []).map((offering, index) => (
-                          <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                            <h3 className="font-medium mb-2">{offering.title}</h3>
-                            <p className="text-sm text-gray-600">{offering.description}</p>
+                          <div key={index} className="dynamic-bg p-4 rounded-lg">
+                            <h3 className="font-medium mb-2 dynamic-text">{offering.title}</h3>
+                            <p className="text-sm dynamic-secondary-text">{offering.description}</p>
                           </div>
                         ))}
                       </div>

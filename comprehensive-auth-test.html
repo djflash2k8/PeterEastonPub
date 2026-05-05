@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comprehensive Authentication Test Suite</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background: white; }
+        .test-section h3 { margin-top: 0; color: #333; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; }
+        button:hover { background: #0056b3; }
+        .result { margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .step-indicator { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-right: 8px; }
+        .step-1 { background: #007bff; color: white; }
+        .step-2 { background: #28a745; color: white; }
+        .step-3 { background: #ffc107; color: black; }
+        .step-4 { background: #dc3545; color: white; }
+        .step-5 { background: #6f42c1; color: white; }
+        .progress { width: 100%; height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .progress-bar { height: 100%; background: #007bff; transition: width 0.3s; }
+        .summary { margin: 20px 0; padding: 15px; background: #e9ecef; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Comprehensive Authentication Test Suite</h1>
+        <p>This tool will systematically test every aspect of the authentication flow to identify exactly where the issue occurs.</p>
+        
+        <div class="progress">
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+        </div>
+        
+        <div class="summary" id="summary">
+            <strong>Test Progress:</strong> <span id="progressText">0/5 tests completed</span>
+        </div>
+        
+        <div class="test-section">
+            <h3><span class="step-indicator step-1">Step 1</span>Basic Connectivity Test</h3>
+            <p>Tests if the development server is responding to basic requests.</p>
+            <button onclick="testConnectivity()">Test Server Connectivity</button>
+            <div id="connectivityResult" class="result">Click to test...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3><span class="step-indicator step-2">Step 2</span>Login API Test</h3>
+            <p>Tests the login endpoint with correct credentials and checks response details.</p>
+            <button onclick="testLoginAPI()">Test Login API</button>
+            <div id="loginResult" class="result">Click to test...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3><span class="step-indicator step-3">Step 3</span>Cookie Analysis</h3>
+            <p>Analyzes what cookies are set after login and their properties.</p>
+            <button onclick="analyzeCookies()">Analyze Cookies</button>
+            <div id="cookieResult" class="result">Click to test...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3><span class="step-indicator step-4">Step 4</span>Admin Access Test</h3>
+            <p>Tests if authenticated user can access the admin panel.</p>
+            <button onclick="testAdminAccess()">Test Admin Access</button>
+            <div id="adminResult" class="result">Click to test...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3><span class="step-indicator step-5">Step 5</span>Middleware Analysis</h3>
+            <p>Tests middleware behavior and authentication logic.</p>
+            <button onclick="testMiddleware()">Test Middleware</button>
+            <div id="middlewareResult" class="result">Click to test...</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Control Panel</h3>
+            <button onclick="runAllTests()">Run All Tests Automatically</button>
+            <button onclick="clearAll()">Clear All Results</button>
+            <button onclick="generateReport()">Generate Diagnostic Report</button>
+            <div id="reportResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            connectivity: null,
+            login: null,
+            cookies: null,
+            admin: null,
+            middleware: null
+        };
+
+        let completedTests = 0;
+
+        function updateProgress() {
+            completedTests = Object.values(testResults).filter(r => r !== null).length;
+            const progress = (completedTests / 5) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `${completedTests}/5 tests completed`;
+        }
+
+        async function testConnectivity() {
+            const resultDiv = document.getElementById('connectivityResult');
+            resultDiv.innerHTML = 'Testing connectivity...';
+            resultDiv.className = 'result info';
+            
+            try {
+                // Test basic server response
+                const response = await fetch('http://localhost:3000/api/events', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                testResults.connectivity = {
+                    success: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    dataPreview: JSON.stringify(data).substring(0, 200)
+                };
+                
+                resultDiv.innerHTML = `
+=== SERVER CONNECTIVITY TEST ===
+Status: ${response.status} ${response.statusText}
+Success: ${response.ok}
+Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}
+Data Preview: ${JSON.stringify(data).substring(0, 200)}...
+
+Conclusion: ${response.ok ? 'Server is responding normally' : 'Server has issues'}
+                `;
+                
+                resultDiv.className = response.ok ? 'result success' : 'result error';
+                
+            } catch (error) {
+                testResults.connectivity = {
+                    success: false,
+                    error: error.message,
+                    type: error.constructor.name
+                };
+                
+                resultDiv.innerHTML = `
+=== SERVER CONNECTIVITY TEST ===
+ERROR: ${error.message}
+Type: ${error.constructor.name}
+
+Conclusion: Server is not accessible or CORS issue
+                `;
+                resultDiv.className = 'result error';
+            }
+            
+            updateProgress();
+        }
+
+        async function testLoginAPI() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.innerHTML = 'Testing login API...';
+            resultDiv.className = 'result info';
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'Peter123!'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Get all response headers
+                const responseHeaders = {};
+                response.headers.forEach((value, key) => {
+                    responseHeaders[key] = value;
+                });
+                
+                testResults.login = {
+                    success: response.ok && data.success,
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: responseHeaders,
+                    data: data,
+                    hasSetCookie: responseHeaders['set-cookie'] ? true : false
+                };
+                
+                resultDiv.innerHTML = `
+=== LOGIN API TEST ===
+Request: POST /api/auth/login
+Credentials: admin / ***
+Status: ${response.status} ${response.statusText}
+Success: ${data.success}
+Response Data: ${JSON.stringify(data, null, 2)}
+
+Response Headers:
+${JSON.stringify(responseHeaders, null, 2)}
+
+Set-Cookie Header: ${responseHeaders['set-cookie'] || 'NOT FOUND'}
+
+Conclusion: ${response.ok && data.success ? 'Login API working correctly' : 'Login API has issues'}
+                `;
+                
+                resultDiv.className = (response.ok && data.success) ? 'result success' : 'result error';
+                
+                // Auto-test cookies after successful login
+                if (response.ok && data.success) {
+                    setTimeout(analyzeCookies, 1000);
+                }
+                
+            } catch (error) {
+                testResults.login = {
+                    success: false,
+                    error: error.message,
+                    type: error.constructor.name
+                };
+                
+                resultDiv.innerHTML = `
+=== LOGIN API TEST ===
+ERROR: ${error.message}
+Type: ${error.constructor.name}
+
+Conclusion: Login API not accessible or network error
+                `;
+                resultDiv.className = 'result error';
+            }
+            
+            updateProgress();
+        }
+
+        function analyzeCookies() {
+            const resultDiv = document.getElementById('cookieResult');
+            resultDiv.innerHTML = 'Analyzing cookies...';
+            resultDiv.className = 'result info';
+            
+            // Get all cookies
+            const allCookies = document.cookie;
+            const cookies = allCookies ? allCookies.split('; ').map(cookie => {
+                const [name, value] = cookie.split('=');
+                return { name: name?.trim(), value: value?.trim() };
+            }) : [];
+            
+            // Find admin auth cookie
+            const adminCookie = cookies.find(c => c.name === 'admin-auth');
+            
+            testResults.cookies = {
+                hasAdminCookie: !!adminCookie,
+                adminCookieValue: adminCookie?.value || null,
+                allCookies: cookies,
+                cookieString: allCookies
+            };
+            
+            resultDiv.innerHTML = `
+=== COOKIE ANALYSIS ===
+Total Cookies: ${cookies.length}
+All Cookies: ${allCookies || 'None found'}
+
+Admin Auth Cookie:
+- Found: ${!!adminCookie}
+- Name: ${adminCookie?.name || 'N/A'}
+- Value: ${adminCookie?.value || 'N/A'}
+
+Cookie Details:
+${cookies.map(c => `- ${c.name}: ${c.value}`).join('\n') || 'No cookies found'}
+
+Conclusion: ${adminCookie ? 'Admin cookie found' : 'Admin cookie NOT found'}
+            `;
+            
+            resultDiv.className = adminCookie ? 'result success' : 'result warning';
+            updateProgress();
+        }
+
+        async function testAdminAccess() {
+            const resultDiv = document.getElementById('adminResult');
+            resultDiv.innerHTML = 'Testing admin access...';
+            resultDiv.className = 'result info';
+            
+            try {
+                const response = await fetch('http://localhost:3000/admin', {
+                    method: 'GET',
+                    credentials: 'include',
+                    redirect: 'manual' // Don't follow redirects automatically
+                });
+                
+                const text = await response.text();
+                
+                testResults.admin = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    redirected: response.redirected,
+                    type: response.type,
+                    url: response.url,
+                    contentPreview: text.substring(0, 500)
+                };
+                
+                resultDiv.innerHTML = `
+=== ADMIN ACCESS TEST ===
+Request: GET /admin
+Status: ${response.status} ${response.statusText}
+Redirected: ${response.redirected}
+Final URL: ${response.url}
+Response Type: ${response.type}
+
+Content Preview:
+${text.substring(0, 500)}${text.length > 500 ? '...' : ''}
+
+Analysis:
+- Status ${response.status}: ${response.status === 200 ? 'Allowed access' : response.status === 302 ? 'Redirected to login' : 'Other issue'}
+- ${response.redirected ? 'Was redirected' : 'No redirect'}
+- ${text.includes('Access Denied') ? 'Shows Access Denied page' : 'Does not show Access Denied'}
+- ${text.includes('Admin Dashboard') ? 'Shows Admin Dashboard' : 'Does not show Admin Dashboard'}
+
+Conclusion: ${response.status === 200 ? 'Admin access granted' : response.status === 302 ? 'Redirected to login (expected if not authenticated)' : 'Unexpected response'}
+                `;
+                
+                resultDiv.className = response.status === 200 ? 'result success' : response.status === 302 ? 'result warning' : 'result error';
+                
+            } catch (error) {
+                testResults.admin = {
+                    success: false,
+                    error: error.message,
+                    type: error.constructor.name
+                };
+                
+                resultDiv.innerHTML = `
+=== ADMIN ACCESS TEST ===
+ERROR: ${error.message}
+Type: ${error.constructor.name}
+
+Conclusion: Admin access test failed
+                `;
+                resultDiv.className = 'result error';
+            }
+            
+            updateProgress();
+        }
+
+        async function testMiddleware() {
+            const resultDiv = document.getElementById('middlewareResult');
+            resultDiv.innerHTML = 'Testing middleware behavior...';
+            resultDiv.className = 'result info';
+            
+            try {
+                // Test different scenarios
+                const tests = [
+                    { name: 'API without auth', url: 'http://localhost:3000/api/events', expectedStatus: 200 },
+                    { name: 'Admin without auth', url: 'http://localhost:3000/admin', expectedStatus: 302 },
+                    { name: 'Admin login page', url: 'http://localhost:3000/admin/login', expectedStatus: 200 }
+                ];
+                
+                const results = [];
+                
+                for (const test of tests) {
+                    try {
+                        const response = await fetch(test.url, {
+                            method: 'GET',
+                            credentials: 'include',
+                            redirect: 'manual'
+                        });
+                        
+                        results.push({
+                            name: test.name,
+                            url: test.url,
+                            status: response.status,
+                            expected: test.expectedStatus,
+                            passed: response.status === test.expectedStatus
+                        });
+                    } catch (error) {
+                        results.push({
+                            name: test.name,
+                            url: test.url,
+                            error: error.message,
+                            passed: false
+                        });
+                    }
+                }
+                
+                testResults.middleware = {
+                    tests: results,
+                    allPassed: results.every(r => r.passed)
+                };
+                
+                resultDiv.innerHTML = `
+=== MIDDLEWARE ANALYSIS ===
+${results.map(r => `
+Test: ${r.name}
+URL: ${r.url}
+Expected Status: ${r.expected}
+Actual Status: ${r.status || 'ERROR'}
+Result: ${r.passed ? 'PASS' : 'FAIL'}
+${r.error ? `Error: ${r.error}` : ''}
+---
+`).join('\n')}
+
+Overall Result: ${results.every(r => r.passed) ? 'All middleware tests passed' : 'Some middleware tests failed'}
+
+Analysis:
+- API endpoints should be accessible (200)
+- Admin panel should redirect to login (302) when not authenticated
+- Admin login page should be accessible (200)
+                `;
+                
+                resultDiv.className = results.every(r => r.passed) ? 'result success' : 'result error';
+                
+            } catch (error) {
+                testResults.middleware = {
+                    success: false,
+                    error: error.message
+                };
+                
+                resultDiv.innerHTML = `
+=== MIDDLEWARE ANALYSIS ===
+ERROR: ${error.message}
+
+Conclusion: Middleware test failed
+                `;
+                resultDiv.className = 'result error';
+            }
+            
+            updateProgress();
+        }
+
+        async function runAllTests() {
+            clearAll();
+            
+            // Run tests in sequence
+            await testConnectivity();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testLoginAPI();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await analyzeCookies();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testAdminAccess();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testMiddleware();
+            
+            // Auto-generate report
+            setTimeout(generateReport, 1000);
+        }
+
+        function clearAll() {
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            // Clear results
+            document.getElementById('connectivityResult').innerHTML = 'Click to test...';
+            document.getElementById('loginResult').innerHTML = 'Click to test...';
+            document.getElementById('cookieResult').innerHTML = 'Click to test...';
+            document.getElementById('adminResult').innerHTML = 'Click to test...';
+            document.getElementById('middlewareResult').innerHTML = 'Click to test...';
+            document.getElementById('reportResult').innerHTML = '';
+            
+            // Reset test results
+            testResults = {
+                connectivity: null,
+                login: null,
+                cookies: null,
+                admin: null,
+                middleware: null
+            };
+            
+            // Reset progress
+            updateProgress();
+            
+            // Reset classes
+            document.querySelectorAll('.result').forEach(el => {
+                el.className = 'result';
+            });
+        }
+
+        function generateReport() {
+            const reportDiv = document.getElementById('reportResult');
+            
+            const report = `
+=== COMPREHENSIVE AUTHENTICATION DIAGNOSTIC REPORT ===
+Generated: ${new Date().toISOString()}
+
+OVERALL STATUS:
+${completedTests}/5 tests completed
+
+DETAILED RESULTS:
+
+1. CONNECTIVITY: ${testResults.connectivity ? (testResults.connectivity.success ? 'PASS' : 'FAIL') : 'NOT TESTED'}
+   ${testResults.connectivity ? JSON.stringify(testResults.connectivity, null, 2) : 'No data'}
+
+2. LOGIN API: ${testResults.login ? (testResults.login.success ? 'PASS' : 'FAIL') : 'NOT TESTED'}
+   ${testResults.login ? JSON.stringify(testResults.login, null, 2) : 'No data'}
+
+3. COOKIES: ${testResults.cookies ? (testResults.cookies.hasAdminCookie ? 'PASS' : 'FAIL') : 'NOT TESTED'}
+   ${testResults.cookies ? JSON.stringify(testResults.cookies, null, 2) : 'No data'}
+
+4. ADMIN ACCESS: ${testResults.admin ? (testResults.admin.status === 200 ? 'PASS' : 'FAIL') : 'NOT TESTED'}
+   ${testResults.admin ? JSON.stringify(testResults.admin, null, 2) : 'No data'}
+
+5. MIDDLEWARE: ${testResults.middleware ? (testResults.middleware.allPassed ? 'PASS' : 'FAIL') : 'NOT TESTED'}
+   ${testResults.middleware ? JSON.stringify(testResults.middleware, null, 2) : 'No data'}
+
+DIAGNOSIS:
+${generateDiagnosis()}
+
+RECOMMENDATIONS:
+${generateRecommendations()}
+            `;
+            
+            reportDiv.innerHTML = report;
+            reportDiv.className = 'result info';
+        }
+
+        function generateDiagnosis() {
+            if (completedTests < 5) {
+                return 'Incomplete testing - run all tests for full diagnosis';
+            }
+            
+            if (!testResults.connectivity?.success) {
+                return 'Server connectivity issues - check if development server is running';
+            }
+            
+            if (!testResults.login?.success) {
+                return 'Login API not working - check credentials and API endpoint';
+            }
+            
+            if (!testResults.cookies?.hasAdminCookie) {
+                return 'Cookie not being set - check cookie configuration in login API';
+            }
+            
+            if (testResults.admin?.status !== 200) {
+                return 'Admin access blocked - check middleware authentication logic';
+            }
+            
+            if (!testResults.middleware?.allPassed) {
+                return 'Middleware issues - check authentication flow';
+            }
+            
+            return 'All tests passed - authentication should be working';
+        }
+
+        function generateRecommendations() {
+            const recommendations = [];
+            
+            if (!testResults.connectivity?.success) {
+                recommendations.push('1. Ensure development server is running on localhost:3000');
+                recommendations.push('2. Check for any server errors in the terminal');
+            }
+            
+            if (!testResults.login?.success) {
+                recommendations.push('3. Verify admin credentials are correct');
+                recommendations.push('4. Check login API endpoint for errors');
+                recommendations.push('5. Ensure environment variables are set correctly');
+            }
+            
+            if (!testResults.cookies?.hasAdminCookie) {
+                recommendations.push('6. Check cookie settings in login API response');
+                recommendations.push('7. Verify cookie domain and path settings');
+                recommendations.push('8. Check browser cookie settings');
+            }
+            
+            if (testResults.admin?.status !== 200) {
+                recommendations.push('9. Check middleware authentication logic');
+                recommendations.push('10. Verify cookie reading in middleware');
+                recommendations.push('11. Check admin layout authentication check');
+            }
+            
+            if (!testResults.middleware?.allPassed) {
+                recommendations.push('12. Review middleware configuration');
+                recommendations.push('13. Check route matching in middleware');
+            }
+            
+            if (recommendations.length === 0) {
+                recommendations.push('Authentication appears to be working correctly');
+                recommendations.push('If still experiencing issues, check browser console for JavaScript errors');
+            }
+            
+            return recommendations.join('\n');
+        }
+
+        // Initialize
+        window.onload = function() {
+            updateProgress();
+        };
+    </script>
+</body>
+</html>

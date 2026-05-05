@@ -1,0 +1,29 @@
+{
+  "brandName": "Peter Easton's Pub",
+  "navigationItems": [
+    {
+      "id": "home",
+      "text": "Home",
+      "href": "/",
+      "target": "_self"
+    },
+    {
+      "id": "events",
+      "text": "Events",
+      "href": "/events",
+      "target": "_self"
+    },
+    {
+      "id": "about",
+      "text": "About Us",
+      "href": "/about-us",
+      "target": "_self"
+    },
+    {
+      "id": "contact",
+      "text": "Contact Us",
+      "href": "/contact-us",
+      "target": "_self"
+    }
+  ]
+}

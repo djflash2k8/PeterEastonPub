@@ -1,1 +1,19 @@
-{"welcomeTitle":"Welcome to Peter Easton's Pub!","welcomeDescription":"Your local destination for great entertainment and good times!","aboutTitle":"About Us","aboutContent":"Located in the heart of St. John's, Peter Easton's Pub has been serving the community with great food, drinks, and entertainment for years. Join us for a memorable experience!","whatWeOfferTitle":"What We Offer","offerings":[{"title":"Live Entertainment","description":"Regular live music performances and special events"},{"title":"Great Atmosphere","description":"Friendly staff and welcoming environment"}],"tags":["Live Music","Karaoke","Open Mic"]}
+{
+  "welcomeTitle": "Welcome to the Peter Easton!",
+  "welcomeDescription": "Tucked just beyond the bustle of downtown St. John’s, Peter Easton Pub stands as a living piece of Newfoundland’s social fabric—unpolished, unapologetic, and unmistakably authentic.",
+  "aboutTitle": "The History",
+  "aboutContent": "Named after the infamous 17th-century pirate Peter Easton, the pub carries a fitting sense of rebellious charm. Like its namesake, it feels a little outside the rules—less polished than the bars of George Street, but far richer in character. It’s a place where philosophy students debate in the corner, comedians test new material midweek, and musicians turn ordinary nights into something memorable.",
+  "whatWeOfferTitle": "Weekly Events! No cover or PWYC!",
+  "offerings": [
+    {
+      "title": "Sunday Night Karaoke!",
+      "description": "Every sunday, Hosted by Matt. Starts @8pm!"
+    },
+    {
+      "title": "Thursday Night Open Mic!",
+      "description": "Open Mic Hosted By Kelsey Arsenault Starts at 8pm!"
+    }
+  ],
+  "tags": [],
+  "updatedAt": "2026-04-27T20:06:28.976Z"
+}

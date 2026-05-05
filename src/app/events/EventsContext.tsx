@@ -10,6 +10,8 @@ export interface Event {
   title: string
   description: string
   imageUrl?: string
+  isRecurring?: boolean
+  archived?: boolean
 }
 
 interface EventsContextType {

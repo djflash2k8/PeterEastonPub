@@ -4,6 +4,47 @@ import path from 'path'
 
 const eventsFile = path.join(process.cwd(), 'src/lib/events.json')
 
+// In-memory storage for production (Vercel serverless)
+let inMemoryEvents: any[] = []
+
+// Load events from file system or memory
+const loadEvents = () => {
+  try {
+    // Check if we're in development or if file exists
+    if (process.env.NODE_ENV === 'development' && fs.existsSync(eventsFile)) {
+      const data = fs.readFileSync(eventsFile, 'utf8')
+      const events = JSON.parse(data)
+      inMemoryEvents = events // Keep memory in sync
+      return events
+    } else {
+      // Use in-memory storage for production or when file doesn't exist
+      return inMemoryEvents
+    }
+  } catch (error) {
+    console.error('Error loading events:', error)
+    return inMemoryEvents
+  }
+}
+
+// Save events to file system or memory
+const saveEvents = (events: any[]) => {
+  try {
+    if (process.env.NODE_ENV === 'development') {
+      // Save to file system in development
+      if (!fs.existsSync(path.dirname(eventsFile))) {
+        fs.mkdirSync(path.dirname(eventsFile), { recursive: true })
+      }
+      fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2))
+    }
+    // Always update memory
+    inMemoryEvents = events
+  } catch (error) {
+    console.error('Error saving events:', error)
+    // At least save to memory
+    inMemoryEvents = events
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     const formData = await request.formData()
@@ -15,6 +56,7 @@ export async function PUT(request: NextRequest) {
     const endTime = formData.get('endTime') as string
     const description = formData.get('description') as string
     const isRecurring = formData.get('isRecurring') === 'true'
+    const archived = formData.get('archived') === 'true'
     const file = formData.get('image') as File | null
     let imageUrl = formData.get('imageUrl') as string || ''
 
@@ -34,8 +76,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Read existing events
-    const data = fs.readFileSync(eventsFile, 'utf8')
-    const events = JSON.parse(data)
+    const events = loadEvents()
     
     // Find and update the event
     const eventIndex = events.findIndex((event: any) => event.id === id)
@@ -51,10 +92,11 @@ export async function PUT(request: NextRequest) {
       endTime,
       description,
       imageUrl: imageUrl || events[eventIndex].imageUrl,
-      isRecurring
+      isRecurring,
+      archived
     }
 
-    fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2))
+    saveEvents(events)
     return NextResponse.json(events[eventIndex])
   } catch (error) {
     console.error('Update Error:', error)
@@ -71,8 +113,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Read existing events
-    const data = fs.readFileSync(eventsFile, 'utf8')
-    const events = JSON.parse(data)
+    const events = loadEvents()
     
     // Find and remove the event
     const eventIndex = events.findIndex((event: any) => event.id === id)
@@ -84,7 +125,7 @@ export async function DELETE(request: NextRequest) {
     events.splice(eventIndex, 1)
     
     // Write updated events back to file
-    fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2))
+    saveEvents(events)
     
     return NextResponse.json({ message: 'Event deleted successfully', event: deletedEvent })
   } catch (error) {

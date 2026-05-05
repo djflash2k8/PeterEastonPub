@@ -1,0 +1,12 @@
+{
+  "backgroundColor": "#000000",
+  "primaryTextColor": "#ffdd00",
+  "secondaryTextColor": "#e5b710",
+  "accentTextColor": "#bec832",
+  "altTextColor": "#d9f505",
+  "fontFamily": "Arial, sans-serif",
+  "fontSize": "16px",
+  "borderRadius": "8px",
+  "padding": "16px",
+  "updatedAt": "2026-04-29T11:29:16.206Z"
+}
