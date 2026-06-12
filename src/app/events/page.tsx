@@ -1,9 +1,47 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useEvents } from './EventsContext'
+
+interface PublicInstagramSettings {
+  enabled: boolean
+  sourceAccountUrl: string
+  defaultHashtag: string
+  showSourceAttribution: boolean
+}
 
 export default function PublicEventsPage() {
   const { events, loading } = useEvents()
+  const [instagramSettings, setInstagramSettings] = useState<PublicInstagramSettings>({
+    enabled: false,
+    sourceAccountUrl: '',
+    defaultHashtag: '',
+    showSourceAttribution: false
+  })
+
+  useEffect(() => {
+    const loadInstagramSettings = async () => {
+      try {
+        const response = await fetch('/api/instagram-settings/public')
+        const data = await response.json()
+        setInstagramSettings({
+          enabled: Boolean(data.enabled),
+          sourceAccountUrl: typeof data.sourceAccountUrl === 'string' ? data.sourceAccountUrl : '',
+          defaultHashtag: typeof data.defaultHashtag === 'string' ? data.defaultHashtag : '',
+          showSourceAttribution: Boolean(data.showSourceAttribution)
+        })
+      } catch {
+        setInstagramSettings({
+          enabled: false,
+          sourceAccountUrl: '',
+          defaultHashtag: '',
+          showSourceAttribution: false
+        })
+      }
+    }
+
+    loadInstagramSettings()
+  }, [])
       
   const format12Hour = (time?: string) => {
     if (!time) return ''
@@ -46,6 +84,14 @@ export default function PublicEventsPage() {
                             {event.date}
                           </div>
                         </div>
+                        {instagramSettings.showSourceAttribution && event.sourceUrl && (
+                          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-pink-700">
+                            <span>Instagram</span>
+                            <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="underline decoration-pink-300 underline-offset-2">
+                              View Post
+                            </a>
+                          </div>
+                        )}
                         {event.startTime && (
                           <p className="text-xl font-bold text-red-600 mb-4">
                             {format12Hour(event.startTime)} 

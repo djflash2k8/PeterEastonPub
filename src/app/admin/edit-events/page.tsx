@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useEvents } from '../../events/EventsContext'
+import InstagramSync from '@/components/Admin/InstagramSync'
 
 interface Event {
   id: string
@@ -14,11 +15,15 @@ interface Event {
   imageUrl?: string
   isRecurring?: boolean
   archived?: boolean
+  sourceId?: string
+  sourceUrl?: string
+  sourceLabel?: string
 }
 
 export default function EditEvents() {
   const [events, setEvents] = useState<Event[]>([])
   const { refreshEvents } = useEvents()
+  const [isInstagramSyncOpen, setIsInstagramSyncOpen] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [newEvent, setNewEvent] = useState({ 
     date: '', 
@@ -174,12 +179,36 @@ export default function EditEvents() {
   const upcomingEvents = events.filter(e => e.date >= today)
   const pastEvents = events.filter(e => e.date < today && e.archived)
 
+  const openInstagramSync = () => setIsInstagramSyncOpen(true)
+  const closeInstagramSync = () => setIsInstagramSyncOpen(false)
+
   return (
     <div className="p-4">
       <div className="mb-4">
         <Link href="/admin" className="text-blue-500 hover:underline font-bold">&larr; Back to Dashboard</Link>
       </div>
+      <div className="mb-6 border border-dashed border-gray-300 rounded p-4 bg-gray-50 text-sm text-gray-700">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <p>
+            Instagram import is being added as a layer on top of this editor, so future posts can become regular events without changing the current workflow.
+          </p>
+          <Link href="/admin/instagram-settings" className="text-blue-600 hover:underline font-bold whitespace-nowrap">
+            Configure Instagram Settings
+          </Link>
+        </div>
+      </div>
       <h1 className="text-xl font-bold mb-4 text-black">Edit Events</h1>
+
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={openInstagramSync}
+          className="rounded border-2 border-black bg-pink-600 px-4 py-2 text-sm font-black uppercase tracking-widest text-white hover:bg-pink-700"
+        >
+          Instagram Import
+        </button>
+        <span className="text-sm text-gray-500">Search posts, preview them, and create events from selected Instagram content.</span>
+      </div>
       
       <form onSubmit={handleSubmit} className="mb-6 flex flex-wrap gap-4 items-end border-b pb-6 text-black">
         <div className="flex flex-col">
@@ -260,6 +289,12 @@ export default function EditEvents() {
                       )}
                     </div>
                     <p className="text-gray-700 mt-1 text-sm line-clamp-1">{event.description}</p>
+                    {(event.sourceUrl || event.sourceLabel) && (
+                      <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-pink-700">
+                        <span>{event.sourceLabel || 'Imported'}</span>
+                        {event.sourceUrl && <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="underline">Source</a>}
+                      </div>
+                    )}
                     {event.isRecurring && (
                       <span className="text-[10px] uppercase font-black bg-yellow-300 px-1 mt-1 inline-block">Recurring</span>
                     )}
@@ -332,6 +367,13 @@ export default function EditEvents() {
           </div>
         )}
       </div>
+
+      <InstagramSync
+        isOpen={isInstagramSyncOpen}
+        onClose={closeInstagramSync}
+        onImported={fetchEvents}
+        existingEvents={events}
+      />
     </div>
   )
 }
