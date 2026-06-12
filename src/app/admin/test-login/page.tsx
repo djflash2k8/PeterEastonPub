@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function TestLoginPage() {
+  const router = useRouter()
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-md mx-auto">
@@ -38,8 +40,6 @@ export default function TestLoginPage() {
             <h3 className="font-medium mb-2">Method 3: Router.push</h3>
             <button 
               onClick={() => {
-                const { useRouter } = require('next/navigation')
-                const router = useRouter()
                 router.push('/admin/login')
               }}
               className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 interface NavigationItem {
@@ -49,18 +49,22 @@ export default function AdminLayout({
   const [navigation, setNavigation] = useState<NavigationSettings>(defaultNavigation)
   const [loginError, setLoginError] = useState('')
   const router = useRouter()
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     checkAuth()
-    // Check for error in URL parameters
-    const error = searchParams.get('error')
-    if (error === 'invalid') {
-      setLoginError('Invalid username or password')
-      // Clear error from URL
-      router.replace('/admin')
+    // Check for error in URL parameters using URLSearchParams
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const error = urlParams.get('error')
+      if (error === 'invalid') {
+        setLoginError('Invalid username or password')
+        // Clear error from URL but stay on login page
+        const url = new URL(window.location.href)
+        url.searchParams.delete('error')
+        window.history.replaceState({}, '', url.toString())
+      }
     }
-  }, [searchParams])
+  }, [])
 
   const checkAuth = () => {
     const authCookie = document.cookie
@@ -75,8 +79,10 @@ export default function AdminLayout({
   }
 
   useEffect(() => {
-    fetchNavigation()
-  }, [])
+    if (isAuthenticated) {
+      fetchNavigation()
+    }
+  }, [isAuthenticated])
 
   const fetchNavigation = async () => {
     try {

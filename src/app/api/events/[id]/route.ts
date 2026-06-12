@@ -1,47 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { getDocumentFromFirebase, setDocumentInFirebase, deleteDocumentFromFirebase, serverTimestamp } from '@/lib/firebase'
 
-const eventsFile = path.join(process.cwd(), 'src/lib/events.json')
-
-// In-memory storage for production (Vercel serverless)
-let inMemoryEvents: any[] = []
-
-// Load events from file system or memory
-const loadEvents = () => {
+async function getEventFromFirebase(eventId: string) {
   try {
-    // Check if we're in development or if file exists
-    if (process.env.NODE_ENV === 'development' && fs.existsSync(eventsFile)) {
-      const data = fs.readFileSync(eventsFile, 'utf8')
-      const events = JSON.parse(data)
-      inMemoryEvents = events // Keep memory in sync
-      return events
+    const eventDoc = await getDocumentFromFirebase('events', eventId)
+    if (eventDoc) {
+      console.log('Loaded event from Firebase')
+      return { id: eventId, ...eventDoc }
     } else {
-      // Use in-memory storage for production or when file doesn't exist
-      return inMemoryEvents
+      console.log('Event not found in Firebase')
+      return null
     }
   } catch (error) {
-    console.error('Error loading events:', error)
-    return inMemoryEvents
+    console.error('Error loading event from Firebase:', error)
+    return null
   }
 }
 
-// Save events to file system or memory
-const saveEvents = (events: any[]) => {
+async function updateEventInFirebase(eventId: string, eventData: any) {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      // Save to file system in development
-      if (!fs.existsSync(path.dirname(eventsFile))) {
-        fs.mkdirSync(path.dirname(eventsFile), { recursive: true })
-      }
-      fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2))
-    }
-    // Always update memory
-    inMemoryEvents = events
+    const eventWithTimestamp = { ...eventData, updatedAt: serverTimestamp() }
+    await setDocumentInFirebase('events', eventId, eventWithTimestamp)
+    console.log('Event updated in Firebase successfully')
+    return { success: true }
   } catch (error) {
-    console.error('Error saving events:', error)
-    // At least save to memory
-    inMemoryEvents = events
+    console.error('Error updating event in Firebase:', error)
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+async function deleteEventFromFirebase(eventId: string) {
+  try {
+    await deleteDocumentFromFirebase('events', eventId)
+    console.log('Event deleted from Firebase successfully')
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting event from Firebase:', error)
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -49,6 +44,10 @@ export async function PUT(request: NextRequest) {
   try {
     const formData = await request.formData()
     const id = request.url.split('/').pop()
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Event ID is required' }, { status: 400 })
+    }
     
     const title = formData.get('title') as string
     const date = formData.get('date') as string
@@ -60,44 +59,38 @@ export async function PUT(request: NextRequest) {
     const file = formData.get('image') as File | null
     let imageUrl = formData.get('imageUrl') as string || ''
 
-    // Handle file upload if provided
+    // Handle file upload if provided (skip for serverless)
     if (file && file.size > 0) {
-      const uploadDir = path.join(process.cwd(), 'public/uploads')
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true })
-      }
-      
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`
-      const filePath = path.join(uploadDir, fileName)
-      await fs.promises.writeFile(filePath, buffer)
-      imageUrl = `/uploads/${fileName}`
+      console.log('File upload skipped in serverless environment')
+      // Keep existing imageUrl
     }
 
-    // Read existing events
-    const events = loadEvents()
-    
-    // Find and update the event
-    const eventIndex = events.findIndex((event: any) => event.id === id)
-    if (eventIndex === -1) {
+    // Get existing event first
+    const existingEvent = await getEventFromFirebase(id)
+    if (!existingEvent) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
     }
 
-    events[eventIndex] = {
-      ...events[eventIndex],
+    // Update event data
+    const updatedEvent = {
+      ...existingEvent,
       title,
       date,
       startTime,
       endTime,
       description,
-      imageUrl: imageUrl || events[eventIndex].imageUrl,
+      imageUrl: imageUrl || (existingEvent as any).imageUrl,
       isRecurring,
       archived
     }
 
-    saveEvents(events)
-    return NextResponse.json(events[eventIndex])
+    const result = await updateEventInFirebase(id, updatedEvent)
+    
+    if (result.success) {
+      return NextResponse.json(updatedEvent)
+    } else {
+      return NextResponse.json({ error: result.error }, { status: 500 })
+    }
   } catch (error) {
     console.error('Update Error:', error)
     return NextResponse.json({ error: 'Failed to update event' }, { status: 500 })
@@ -112,22 +105,19 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Event ID is required' }, { status: 400 })
     }
 
-    // Read existing events
-    const events = loadEvents()
-    
-    // Find and remove the event
-    const eventIndex = events.findIndex((event: any) => event.id === id)
-    if (eventIndex === -1) {
+    // Check if event exists first
+    const existingEvent = await getEventFromFirebase(id)
+    if (!existingEvent) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 })
     }
 
-    const deletedEvent = events[eventIndex]
-    events.splice(eventIndex, 1)
+    const result = await deleteEventFromFirebase(id)
     
-    // Write updated events back to file
-    saveEvents(events)
-    
-    return NextResponse.json({ message: 'Event deleted successfully', event: deletedEvent })
+    if (result.success) {
+      return NextResponse.json({ message: 'Event deleted successfully', event: existingEvent })
+    } else {
+      return NextResponse.json({ error: result.error }, { status: 500 })
+    }
   } catch (error) {
     console.error('Delete Error:', error)
     return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 })

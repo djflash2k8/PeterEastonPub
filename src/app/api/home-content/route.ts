@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getDocumentFromFirebase, setDocumentInFirebase } from '@/lib/firebase'
 
 // Default content for fallback
 const DEFAULT_CONTENT = {
@@ -21,34 +22,19 @@ let contentInitialized = false
 async function initializeContent() {
   if (contentInitialized) return homeContent
   
-  // Try to get content from environment variable first
-  const envContent = process.env.HOME_PAGE_CONTENT
-  if (envContent) {
-    try {
-      homeContent = JSON.parse(envContent)
-      console.log('Loaded content from environment variable')
-    } catch (error) {
-      console.log('Failed to parse environment content, using default:', error instanceof Error ? error.message : String(error))
-      homeContent = DEFAULT_CONTENT
-    }
-  } else {
-    // Try to read from file system for development
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        const { readFile } = require('fs/promises')
-        const path = require('path')
-        const CONTENT_FILE = path.join(process.cwd(), 'data', 'home-content.json')
-        const data = await readFile(CONTENT_FILE, 'utf-8')
-        homeContent = JSON.parse(data)
-        console.log('Loaded content from file system')
-      } catch (error) {
-        console.log('Development file read failed, using default:', error instanceof Error ? error.message : String(error))
-        homeContent = DEFAULT_CONTENT
-      }
+  // Try to get content from Firebase first
+  try {
+    const firebaseContent = await getDocumentFromFirebase('home-content', 'main')
+    if (firebaseContent) {
+      homeContent = firebaseContent
+      console.log('Loaded content from Firebase (peweb database)')
     } else {
-      console.log('No environment content found, using default')
       homeContent = DEFAULT_CONTENT
+      console.log('No Firebase content found, using default')
     }
+  } catch (error) {
+    console.log('Firebase read failed, using default:', error instanceof Error ? error.message : String(error))
+    homeContent = DEFAULT_CONTENT
   }
   
   contentInitialized = true
@@ -59,30 +45,20 @@ async function saveContent(content: any) {
   homeContent = { ...content, updatedAt: new Date().toISOString() }
   contentInitialized = true
   
-  // In development, try to save to file system
-  if (process.env.NODE_ENV === 'development') {
-    try {
-      const { writeFile } = require('fs/promises')
-      const path = require('path')
-      const fs = require('fs')
-      
-      const dataDir = path.join(process.cwd(), 'data')
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true })
-      }
-      
-      const CONTENT_FILE = path.join(process.cwd(), 'data', 'home-content.json')
-      await writeFile(CONTENT_FILE, JSON.stringify(homeContent, null, 2), 'utf-8')
-      console.log('Successfully saved to file system')
-      return { success: true, persisted: true, method: 'file-system' }
-    } catch (error) {
-      console.log('Development file save failed:', error instanceof Error ? error.message : String(error))
+  // Try to save to Firebase for persistence
+  try {
+    const result = await setDocumentInFirebase('home-content', 'main', homeContent)
+    if (result) {
+      console.log('Content saved to Firebase (peweb database)')
+      return { success: true, persisted: true, method: 'firebase' }
+    } else {
+      console.log('Firebase save failed, using memory fallback')
+      return { success: true, persisted: false, method: 'memory' }
     }
+  } catch (error) {
+    console.error('Failed to save content to Firebase:', error instanceof Error ? error.message : String(error))
+    return { success: false, persisted: false, method: 'error' }
   }
-  
-  // In production, we'll use in-memory storage
-  console.log('Content saved to memory for production')
-  return { success: true, persisted: false, method: 'memory' }
 }
 
 export async function GET() {

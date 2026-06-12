@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (isValid) {
       // For form submissions, redirect to admin dashboard
       if (contentType?.includes('application/x-www-form-urlencoded')) {
-        const response = NextResponse.redirect(new URL('/admin', request.url))
+        const response = NextResponse.redirect(new URL('/admin', request.url), 303)
         
         // Set secure cookie
         response.cookies.set('admin-auth', 'true', {
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     } else {
       // For form submissions, redirect back to login with error
       if (contentType?.includes('application/x-www-form-urlencoded')) {
-        return NextResponse.redirect(new URL('/admin?error=invalid', request.url))
+        return NextResponse.redirect(new URL('/admin?error=invalid', request.url), 303)
       }
       
       return NextResponse.json(

@@ -39,7 +39,18 @@ export default function DynamicStyling() {
       }
     }
 
-    fetchStyling()
+    // Only fetch styling if we're not on the login page
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname
+      if (!pathname.includes('/admin/login')) {
+        fetchStyling()
+        
+        // Set up polling for real-time updates (every 5 seconds)
+        const interval = setInterval(fetchStyling, 5000)
+        
+        return () => clearInterval(interval)
+      }
+    }
   }, [])
 
   const applyStyling = (stylingData: GlobalStyling) => {

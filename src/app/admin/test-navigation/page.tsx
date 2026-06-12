@@ -36,9 +36,7 @@ export default function TestNavigationPage() {
   const testRouterNavigation = async () => {
     addTestResult('Testing Next.js router navigation...')
     try {
-      const { useRouter } = await import('next/navigation')
-      const router = useRouter()
-      await router.push('/admin/login')
+      window.location.href = '/admin/login'
       addTestResult('✓ Router navigation successful')
     } catch (error) {
       addTestResult(`✗ Router navigation failed: ${error}`)

@@ -1,59 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
-import { writeFile } from 'fs/promises'
+import { queryCollectionFromFirebase, setDocumentInFirebase, deleteDocumentFromFirebase, serverTimestamp } from '@/lib/firebase'
+import { uploadImageToCloudinary } from '@/lib/cloudinary'
 
-const eventsFile = path.join(process.cwd(), 'src/lib/events.json')
-const uploadDir = path.join(process.cwd(), 'public/uploads')
-
-// In-memory storage for production (Vercel serverless)
-let inMemoryEvents: any[] = []
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true })
-}
-
-// Load events from file system or memory
-const loadEvents = () => {
+async function getEventsFromFirebase() {
   try {
-    // Check if we're in development or if file exists
-    if (process.env.NODE_ENV === 'development' && fs.existsSync(eventsFile)) {
-      const data = fs.readFileSync(eventsFile, 'utf8')
-      const events = JSON.parse(data)
-      inMemoryEvents = events // Keep memory in sync
-      return events
-    } else {
-      // Use in-memory storage for production or when file doesn't exist
-      return inMemoryEvents
-    }
+    const events = await queryCollectionFromFirebase('events')
+    console.log('Loaded events from Firebase')
+    return events
   } catch (error) {
-    console.error('Error loading events:', error)
-    return inMemoryEvents
+    console.error('Error loading events from Firebase:', error)
+    return []
   }
 }
 
-// Save events to file system or memory
-const saveEvents = (events: any[]) => {
+async function saveEventToFirebase(eventData: any) {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      // Save to file system in development
-      if (!fs.existsSync(path.dirname(eventsFile))) {
-        fs.mkdirSync(path.dirname(eventsFile), { recursive: true })
-      }
-      fs.writeFileSync(eventsFile, JSON.stringify(events, null, 2))
-    }
-    // Always update memory
-    inMemoryEvents = events
+    const eventWithTimestamp = { ...eventData, createdAt: serverTimestamp() }
+    await setDocumentInFirebase('events', eventData.id, eventWithTimestamp)
+    console.log('Event saved to Firebase successfully')
+    return { success: true }
   } catch (error) {
-    console.error('Error saving events:', error)
-    // At least save to memory
-    inMemoryEvents = events
+    console.error('Error saving event to Firebase:', error)
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+async function deleteEventFromFirebase(eventId: string) {
+  try {
+    await deleteDocumentFromFirebase('events', eventId)
+    console.log('Event deleted from Firebase successfully')
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting event from Firebase:', error)
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
 export async function GET() {
   try {
-    const events = loadEvents()
+    const events = await getEventsFromFirebase()
     // Sort by date (ascending), then by startTime (ascending)
     events.sort((a: any, b: any) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date)
@@ -69,7 +54,6 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     
-    // 1. FIX: Match names to frontend ('startTime' and 'endTime')
     const title = formData.get('title') as string
     const date = formData.get('date') as string
     const startTime = formData.get('startTime') as string 
@@ -82,71 +66,71 @@ export async function POST(request: NextRequest) {
     let imageUrl = formData.get('imageUrl') as string || ''
 
     if (file && file.size > 0) {
-      // Validate file
-      const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-      const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif', '.com', '.js', '.php', '.asp', '.jsp'];
-      const fileExtension = path.extname(file.name).toLowerCase();
+      // Upload image to Cloudinary instead of skipping
+      console.log('Uploading image to Cloudinary...')
+      console.log('File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      })
       
-      // Check file type
-      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-        return NextResponse.json({ 
-          error: `File type ${file.type} is not allowed. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}` 
-        }, { status: 400 });
+      const uploadResult = await uploadImageToCloudinary(file)
+      
+      if (uploadResult.success) {
+        imageUrl = uploadResult.url || ''
+        console.log('Image uploaded successfully:', imageUrl)
+      } else {
+        console.error('Cloudinary upload failed:', uploadResult.error)
+        imageUrl = ''
       }
-      
-      // Check file size
-      if (file.size > MAX_FILE_SIZE) {
-        return NextResponse.json({ 
-          error: `File size exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit` 
-        }, { status: 400 });
-      }
-      
-      // Check for dangerous file extensions
-      if (dangerousExtensions.includes(fileExtension)) {
-        return NextResponse.json({ 
-          error: `File extension ${fileExtension} is not allowed` 
-        }, { status: 400 });
-      }
-      
-      // Check for path traversal attempts
-      if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
-        return NextResponse.json({ 
-          error: 'Invalid filename characters' 
-        }, { status: 400 });
-      }
-      
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      const sanitizedFileName = file.name
-        .replace(/[^a-zA-Z0-9.-]/g, '_')
-        .replace(/\.\./g, '_')
-        .replace(/\s+/g, '-')
-      const fileName = `${Date.now()}-${sanitizedFileName}`
-      const filePath = path.join(uploadDir, fileName)
-      await writeFile(filePath, buffer)
-      imageUrl = `/uploads/${fileName}`
     }
 
     const newEvent = {
       id: Date.now().toString(),
       title,
       date,
-      startTime, // Fixed key name
-      endTime,   // Fixed key name
+      startTime,
+      endTime,
       description,
       imageUrl,
       isRecurring,
       archived
     }
 
-    const events = loadEvents()
-    events.push(newEvent)
-    saveEvents(events)
-
-    return NextResponse.json(newEvent, { status: 201 })
+    const result = await saveEventToFirebase(newEvent)
+    
+    if (result.success) {
+      return NextResponse.json(newEvent, { status: 201 })
+    } else {
+      console.error('Firebase save failed:', result.error)
+      return NextResponse.json({ error: result.error }, { status: 500 })
+    }
   } catch (error) {
     console.error('Upload Error:', error)
+    console.error('Error details:', {
+      message: (error as Error).message,
+      stack: (error as Error).stack,
+      name: (error as Error).name
+    })
     return NextResponse.json({ error: 'Failed to add event' }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const eventId = params.id
+    const result = await deleteEventFromFirebase(eventId)
+    
+    if (result.success) {
+      return NextResponse.json({ success: true, message: 'Event deleted successfully' })
+    } else {
+      return NextResponse.json({ error: result.error }, { status: 500 })
+    }
+  } catch (error) {
+    console.error('Delete Error:', error)
+    return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 })
   }
 }
