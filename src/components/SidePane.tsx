@@ -4,9 +4,10 @@ import { useEvents } from '../app/events/EventsContext'
 import Hours from './Hours'
 
 export default function SidePane() {
+  const { events, loading } = useEvents()
+  const today = new Date().toISOString().split('T')[0]
+
   try {
-    const { events, loading } = useEvents()
-    const today = new Date().toISOString().split('T')[0]
 
     const nextEvent = events
     .filter(e => e.date >= today)

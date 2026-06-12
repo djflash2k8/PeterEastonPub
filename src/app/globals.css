@@ -1,3 +1,68 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-color: #36454F;
+    --primary-text-color: #FFD700;
+    --secondary-text-color: #FFD700;
+    --accent-text-color: #FFD700;
+    --alt-text-color: #FFFFFF;
+    --font-family: 'Arial, sans-serif';
+    --font-size: 16px;
+    --border-radius: 8px;
+    --padding: 16px;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--primary-text-color);
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--primary-text-color);
+  }
+  
+  p, span, div {
+    color: var(--secondary-text-color);
+  }
+  
+  a {
+    color: var(--accent-text-color);
+  }
+  
+  a:hover {
+    opacity: 0.8;
+  }
+  
+  .text-gold {
+    color: var(--primary-text-color);
+  }
+  
+  .bg-charcoal {
+    background-color: var(--bg-color);
+  }
+
+  .dynamic-bg {
+    background-color: var(--bg-color);
+  }
+
+  .dynamic-text {
+    color: var(--primary-text-color);
+  }
+
+  .dynamic-secondary-text {
+    color: var(--secondary-text-color);
+  }
+
+  .dynamic-accent-text {
+    color: var(--accent-text-color);
+  }
+
+  .dynamic-alt-text {
+    color: var(--alt-text-color);
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "adminTitle": "Peter Easton Admin",
+  "navigationItems": [
+    {
+      "id": "dashboard",
+      "text": "Dashboard",
+      "href": "/admin",
+      "target": "_self"
+    },
+    {
+      "id": "viewSite",
+      "text": "View Site",
+      "href": "/",
+      "target": "_blank"
+    }
+  ]
+}

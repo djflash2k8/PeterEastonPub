@@ -65,5 +65,136 @@
     "description": "Albert Dalton, Little Fauna, Big Diamond and Brandon Coaker Band",
     "imageUrl": "/uploads/1775837875564-659576525_18084052973600349_4184302831340728341_n.jpg",
     "isRecurring": false
+  },
+  {
+    "id": "1777317838241",
+    "title": "Last Minute Comedy",
+    "date": "2026-04-15",
+    "startTime": "20:00",
+    "endTime": "",
+    "description": "Live Comedy Show Every Wednesday",
+    "imageUrl": "/uploads/1775598215459-lastminutecom.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777317838878",
+    "title": "Open Mic Night",
+    "date": "2026-04-16",
+    "startTime": "20:00",
+    "endTime": "11:00",
+    "description": "Starting 8pm Every Thursday",
+    "imageUrl": "/uploads/1775598320421-openmic.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777317839490",
+    "title": "Traditional Music Session",
+    "date": "2026-04-18",
+    "startTime": "20:00",
+    "endTime": "23:00",
+    "description": "Live and unplugged newfoundland traditional music every Saturday",
+    "imageUrl": "/uploads/1775599161020-trad_music_session.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777317839999",
+    "title": "Karaoke",
+    "date": "2026-04-19",
+    "startTime": "20:00",
+    "endTime": "00:00",
+    "description": "Karaoke every Sunday night",
+    "imageUrl": "/uploads/1775598943951-660465337_10230388240681207_8404282441325245608_n.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777317840507",
+    "title": "Last Minute Comedy",
+    "date": "2026-04-22",
+    "startTime": "20:00",
+    "endTime": "",
+    "description": "Live Comedy Show Every Wednesday",
+    "imageUrl": "/uploads/1775598215459-lastminutecom.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777317859689",
+    "title": "Last Minute Comedy",
+    "date": "2026-04-15",
+    "startTime": "20:00",
+    "endTime": "",
+    "description": "Live Comedy Show Every Wednesday",
+    "imageUrl": "/uploads/1775598215459-lastminutecom.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777318061238",
+    "title": "Last Minute Comedy",
+    "date": "2026-04-15",
+    "startTime": "20:00",
+    "endTime": "",
+    "description": "Live Comedy Show Every Wednesday",
+    "imageUrl": "/uploads/1775598215459-lastminutecom.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777318280644",
+    "title": "Last Minute Comedy",
+    "date": "2026-04-15",
+    "startTime": "20:00",
+    "endTime": "",
+    "description": "Live Comedy Show Every Wednesday",
+    "imageUrl": "/uploads/1775598215459-lastminutecom.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777318706647",
+    "title": "Last Minute Comedy",
+    "date": "2026-04-29",
+    "startTime": "20:00",
+    "endTime": "",
+    "description": "Live Comedy Show Every Wednesday",
+    "imageUrl": "/uploads/1775598215459-lastminutecom.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777318714995",
+    "title": "Open Mic Night",
+    "date": "2026-04-30",
+    "startTime": "20:00",
+    "endTime": "11:00",
+    "description": "Starting 8pm Every Thursday",
+    "imageUrl": "/uploads/1775598320421-openmic.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777318765351",
+    "title": "Traditional Music Session",
+    "date": "2026-05-02",
+    "startTime": "20:00",
+    "endTime": "23:00",
+    "description": "Live and unplugged newfoundland traditional music every Saturday",
+    "imageUrl": "/uploads/1775599161020-trad_music_session.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777318866599",
+    "title": "Karaoke",
+    "date": "2026-05-03",
+    "startTime": "20:00",
+    "endTime": "00:00",
+    "description": "Karaoke every Sunday night",
+    "imageUrl": "/uploads/1775598943951-660465337_10230388240681207_8404282441325245608_n.jpg",
+    "isRecurring": false
+  },
+  {
+    "id": "1777319665535",
+    "title": "The music of Adrianne Lenker",
+    "date": "2026-04-24",
+    "startTime": "21:00",
+    "endTime": "",
+    "description": "Gorgeous show alert! Coming up quick on Friday April 24th. Tickets available at Fred's or at the door (if it doesn't sell out!)",
+    "imageUrl": "/uploads/1777319665533-670879008_18086010362600349_8629655638131852081_n.jpg",
+    "isRecurring": false,
+    "archived": true
   }
 ]

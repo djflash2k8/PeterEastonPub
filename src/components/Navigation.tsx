@@ -1,10 +1,65 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+
+interface NavigationItem {
+  id: string
+  text: string
+  href: string
+  target: '_self' | '_blank'
+}
+
+interface FrontendNavigationSettings {
+  brandName: string
+  navigationItems: NavigationItem[]
+}
 
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [navigation, setNavigation] = useState<FrontendNavigationSettings>({
+    brandName: "Peter Easton's Pub",
+    navigationItems: [
+      {
+        id: 'home',
+        text: 'Home',
+        href: '/',
+        target: '_self'
+      },
+      {
+        id: 'events',
+        text: 'Events',
+        href: '/events',
+        target: '_self'
+      },
+      {
+        id: 'about',
+        text: 'About Us',
+        href: '/about-us',
+        target: '_self'
+      },
+      {
+        id: 'contact',
+        text: 'Contact Us',
+        href: '/contact-us',
+        target: '_self'
+      }
+    ]
+  })
+
+  useEffect(() => {
+    fetchNavigation()
+  }, [])
+
+  const fetchNavigation = async () => {
+    try {
+      const res = await fetch('/api/frontend-navigation')
+      const data = await res.json()
+      setNavigation(data)
+    } catch (error) {
+      console.error('Failed to fetch frontend navigation:', error)
+    }
+  }
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen)
@@ -18,42 +73,25 @@ export default function Navigation() {
     <nav className="bg-gray-800 text-white relative">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo/Brand - could be added later */}
+          {/* Logo/Brand */}
           <div className="flex items-center">
-            <span className="text-xl font-bold">Peter Easton's Pub</span>
+            <span className="text-xl font-bold">{navigation.brandName}</span>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              <Link 
-                href="/" 
-                className="hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                onClick={closeMenu}
-              >
-                Home
-              </Link>
-              <Link 
-                href="/events" 
-                className="hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                onClick={closeMenu}
-              >
-                Events
-              </Link>
-              <Link 
-                href="/about-us" 
-                className="hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                onClick={closeMenu}
-              >
-                About Us
-              </Link>
-              <Link 
-                href="/contact-us" 
-                className="hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                onClick={closeMenu}
-              >
-                Contact Us
-              </Link>
+              {navigation.navigationItems.map(item => (
+                <Link 
+                  key={item.id}
+                  href={item.href} 
+                  target={item.target}
+                  className="hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  onClick={closeMenu}
+                >
+                  {item.text}
+                </Link>
+              ))}
             </div>
           </div>
 
@@ -107,34 +145,17 @@ export default function Navigation() {
       {isMenuOpen && (
         <div className="md:hidden" id="mobile-menu">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link
-              href="/"
-              className="hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-              onClick={closeMenu}
-            >
-              Home
-            </Link>
-            <Link
-              href="/events"
-              className="hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-              onClick={closeMenu}
-            >
-              Events
-            </Link>
-            <Link
-              href="/about-us"
-              className="hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-              onClick={closeMenu}
-            >
-              About Us
-            </Link>
-            <Link
-              href="/contact-us"
-              className="hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-              onClick={closeMenu}
-            >
-              Contact Us
-            </Link>
+            {navigation.navigationItems.map(item => (
+              <Link
+                key={item.id}
+                href={item.href}
+                target={item.target}
+                className="hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                onClick={closeMenu}
+              >
+                {item.text}
+              </Link>
+            ))}
           </div>
         </div>
       )}

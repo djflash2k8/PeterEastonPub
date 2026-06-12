@@ -10,7 +10,7 @@ export default function AboutAdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<Omit<AboutArticle, 'id' | 'createdAt'>>({ title: '', content: '', imageUrl: '' });
+  const [form, setForm] = useState<Omit<AboutArticle, 'id' | 'createdAt'>>({ title: '', content: '', imageUrl: '', updatedAt: new Date().toISOString() });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
 
@@ -94,7 +94,7 @@ export default function AboutAdminPage() {
       await fetchArticles(); // Re-fetch articles to update the list
       setEditingArticle(null);
       setSelectedFile(null);
-      setForm({ title: '', content: '', imageUrl: '' }); // Clear form after successful save
+      setForm({ title: '', content: '', imageUrl: '', updatedAt: new Date().toISOString() }); // Clear form after successful save
     } catch (err: any) {
       console.error('Save error:', err);
       setError(err.message || 'Failed to save article. Please check your connection.');
@@ -104,11 +104,19 @@ export default function AboutAdminPage() {
   };
 
   const handleEdit = (article: AboutArticle) => {
-    setEditingArticle(article);
+    setEditingArticle({
+      id: article.id,
+      title: article.title,
+      content: article.content,
+      imageUrl: article.imageUrl,
+      createdAt: article.createdAt,
+      updatedAt: article.updatedAt
+    });
     setForm({
       title: article.title,
       content: article.content,
       imageUrl: article.imageUrl || '',
+      updatedAt: article.updatedAt
     });
     setSelectedFile(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -135,7 +143,7 @@ export default function AboutAdminPage() {
   const handleCancelEdit = () => {
     setEditingArticle(null);
     setSelectedFile(null);
-    setForm({ title: '', content: '', imageUrl: '' }); // Clear form on cancel
+    setForm({ title: '', content: '', imageUrl: '', updatedAt: new Date().toISOString() }); // Clear form on cancel
   };
 
   return (
@@ -147,8 +155,8 @@ export default function AboutAdminPage() {
         <h1 className="text-2xl font-bold">Manage About Page</h1>
         <button
           onClick={() => {
-            setForm({ title: '', content: '', imageUrl: '' }); // Clear form for new article
-            setEditingArticle({ id: 'new', title: '', content: '', imageUrl: '', createdAt: new Date().toISOString() }); // Set a temporary article object to make the form visible for creation
+            setForm({ title: '', content: '', imageUrl: '', updatedAt: new Date().toISOString() }); // Clear form for new article
+            setEditingArticle({ id: 'new', title: '', content: '', imageUrl: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }); // Set a temporary article object to make the form visible for creation
           }}
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
         >

@@ -16,7 +16,7 @@ export default function PublicEventsPage() {
 
   const today = new Date().toISOString().split('T')[0]
   const upcomingEvents = events.filter(e => e.date >= today)
-  const pastEvents = events.filter(e => e.date < today)
+  const pastEvents = events.filter(e => e.date < today && e.archived)
 
   return (
      <div className="min-h-screen flex flex-col">     

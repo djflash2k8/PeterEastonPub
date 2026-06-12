@@ -13,6 +13,7 @@ interface Event {
   description: string
   imageUrl?: string
   isRecurring?: boolean
+  archived?: boolean
 }
 
 export default function EditEvents() {
@@ -26,17 +27,21 @@ export default function EditEvents() {
     title: '', 
     description: '',
     imageUrl: '',
-    isRecurring: false
+    isRecurring: false,
+    archived: false
   })
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [showPastEvents, setShowPastEvents] = useState(true)
 
   useEffect(() => {
     fetchEvents()
   }, [])
 
   const fetchEvents = async () => {
+    console.log('Fetching events...')
     const res = await fetch('/api/events')
     const data = await res.json()
+    console.log('Events received:', data)
     setEvents(Array.isArray(data) ? data : [])
     refreshEvents() // Keep the SidePane in sync
   }
@@ -60,6 +65,7 @@ export default function EditEvents() {
     formData.append('title', newEvent.title)
     formData.append('description', newEvent.description)
     formData.append('isRecurring', String(newEvent.isRecurring))
+    formData.append('archived', String(newEvent.archived))
 
     if (selectedFile) {
       formData.append('image', selectedFile)
@@ -82,7 +88,7 @@ export default function EditEvents() {
       }
 
       setEditingId(null)
-      setNewEvent({ date: '', startTime: '', endTime: '', title: '', description: '', imageUrl: '', isRecurring: false })
+      setNewEvent({ date: '', startTime: '', endTime: '', title: '', description: '', imageUrl: '', isRecurring: false, archived: false })
       setSelectedFile(null)
       fetchEvents()
     } catch (err: any) {
@@ -98,7 +104,8 @@ export default function EditEvents() {
       title: event.title, 
       description: event.description,
       imageUrl: event.imageUrl || '',
-      isRecurring: event.isRecurring || false
+      isRecurring: event.isRecurring || false,
+      archived: event.archived || false
     })
     setEditingId(event.id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -111,14 +118,29 @@ export default function EditEvents() {
   }
 
   const handleReAddNextWeek = async (event: Event) => {
-    // Calculate same day next week
-    const d = new Date(event.date + 'T00:00:00')
-    d.setDate(d.getDate() + 7)
-    const nextWeekDate = d.toISOString().split('T')[0]
+    // Calculate same day next week from today's date
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const eventDayOfWeek = new Date(event.date + 'T00:00:00').getDay()
+    
+    // Find the next occurrence of the same day of week
+    let nextWeekDate = new Date(today)
+    nextWeekDate.setDate(today.getDate() + (7 - today.getDay() + eventDayOfWeek) % 7 || 7)
+    
+    // If that date is in the past or today, add 7 more days
+    if (nextWeekDate <= today) {
+      nextWeekDate.setDate(nextWeekDate.getDate() + 7)
+    }
+    
+    const formattedDate = nextWeekDate.toISOString().split('T')[0]
+
+    console.log('Original event:', event)
+    console.log('Today:', today.toISOString().split('T')[0])
+    console.log('Next week date:', formattedDate)
 
     const formData = new FormData()
     formData.append('title', event.title)
-    formData.append('date', nextWeekDate)
+    formData.append('date', formattedDate)
     formData.append('startTime', event.startTime || '')
     formData.append('endTime', event.endTime || '')
     formData.append('description', event.description)
@@ -128,18 +150,29 @@ export default function EditEvents() {
     }
 
     try {
+      console.log('Sending request to /api/events')
       const res = await fetch('/api/events', { method: 'POST', body: formData })
+      console.log('Response status:', res.status)
+      
       if (res.ok) {
+        const result = await res.json()
+        console.log('Event created:', result)
         fetchEvents()
+        alert('Event successfully added for next week!')
+      } else {
+        const errorData = await res.json().catch(() => ({}))
+        console.error('Server error:', errorData)
+        throw new Error(errorData.error || errorData.message || `Server error: ${res.status}`)
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to clone event:', err)
+      alert(`Failed to add event for next week: ${err.message}`)
     }
   }
 
   const today = new Date().toISOString().split('T')[0]
   const upcomingEvents = events.filter(e => e.date >= today)
-  const pastEvents = events.filter(e => e.date < today)
+  const pastEvents = events.filter(e => e.date < today && e.archived)
 
   return (
     <div className="p-4">
@@ -187,6 +220,15 @@ export default function EditEvents() {
           />
           <label htmlFor="recurring" className="text-xs font-bold cursor-pointer">Recurring Weekly</label>
         </div>
+        <div className="flex items-center gap-2 pb-3">
+          <input 
+            type="checkbox" 
+            id="archived"
+            checked={newEvent.archived} 
+            onChange={(e) => setNewEvent({ ...newEvent, archived: e.target.checked })} 
+          />
+          <label htmlFor="archived" className="text-xs font-bold cursor-pointer">Archive</label>
+        </div>
         <button type="submit" className="p-2 bg-green-500 text-white rounded font-bold px-4">
           {editingId ? 'Update' : 'Add'}
         </button>
@@ -221,6 +263,9 @@ export default function EditEvents() {
                     {event.isRecurring && (
                       <span className="text-[10px] uppercase font-black bg-yellow-300 px-1 mt-1 inline-block">Recurring</span>
                     )}
+                    {event.archived && (
+                      <span className="text-[10px] uppercase font-black bg-purple-300 px-1 mt-1 inline-block">Archive</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
@@ -239,35 +284,51 @@ export default function EditEvents() {
 
         {pastEvents.length > 0 && (
           <div className="mt-12">
-            <h2 className="text-lg font-bold mb-4 text-gray-400 border-b pb-2">Past Events</h2>
-            <ul className="text-black opacity-60">
-              {pastEvents.map(event => (
-                <li 
-                  key={event.id} 
-                  className="border p-3 mb-2 flex justify-between items-center bg-gray-50 rounded grayscale hover:grayscale-0 cursor-pointer transition-all"
-                  onClick={() => handleEdit(event)}
-                >
-                  <div className="flex gap-4 items-center">
-                    {event.imageUrl && (
-                      <img src={event.imageUrl} alt="" className="w-16 h-16 object-cover rounded bg-gray-100" />
-                    )}
-                    <div>
-                      <span className="font-bold text-lg">{event.title}</span>
-                      <div className="text-sm">
-                        <span className="bg-gray-200 px-2 py-0.5 rounded mr-2">{event.date}</span>
+            <div className="flex items-center justify-between mb-4 border-b pb-2">
+              <h2 className="text-lg font-bold text-gray-400">Past Events</h2>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="show-past-events"
+                  checked={showPastEvents} 
+                  onChange={(e) => setShowPastEvents(e.target.checked)} 
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="show-past-events" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Show Past Events
+                </label>
+              </div>
+            </div>
+            {showPastEvents && (
+              <ul className="text-black opacity-60">
+                {pastEvents.map(event => (
+                  <li 
+                    key={event.id} 
+                    className="border p-3 mb-2 flex justify-between items-center bg-gray-50 rounded grayscale hover:grayscale-0 cursor-pointer transition-all"
+                    onClick={() => handleEdit(event)}
+                  >
+                    <div className="flex gap-4 items-center">
+                      {event.imageUrl && (
+                        <img src={event.imageUrl} alt="" className="w-16 h-16 object-cover rounded bg-gray-100" />
+                      )}
+                      <div>
+                        <span className="font-bold text-lg">{event.title}</span>
+                        <div className="text-sm">
+                          <span className="bg-gray-200 px-2 py-0.5 rounded mr-2">{event.date}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                    <button 
-                      onClick={() => handleReAddNextWeek(event)} 
-                      className="p-2 bg-green-600 text-white rounded text-xs font-bold px-3 hover:bg-green-700"
-                    >+ Next Week</button>
-                    <button onClick={() => handleDelete(event.id)} className="p-2 bg-red-400 text-white rounded text-sm px-4">Delete</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        onClick={() => handleReAddNextWeek(event)} 
+                        className="p-2 bg-green-600 text-white rounded text-xs font-bold px-3 hover:bg-green-700"
+                      >+ Next Week</button>
+                      <button onClick={() => handleDelete(event.id)} className="p-2 bg-red-400 text-white rounded text-sm px-4">Delete</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </div>
