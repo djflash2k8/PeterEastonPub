@@ -101,7 +101,7 @@ export default function PublicEventsPage() {
                           {event.description}
                         </p>
                       </div>
-                    </div>
+                    </button>
                   ))
                 ) : (
                   <div
