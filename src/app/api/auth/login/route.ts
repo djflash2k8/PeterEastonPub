@@ -1,96 +1,73 @@
 import { NextResponse } from 'next/server'
-import { validateCredentials } from '@/lib/auth'
+import { validateCredentials, signToken } from '@/lib/auth'
+
+const loginAttempts = new Map<string, { count: number; lockedUntil: number }>()
+const MAX_ATTEMPTS = 5
+const LOCKOUT_MS = 15 * 60 * 1000
+
+function getClientIp(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for')
+  return forwarded ? forwarded.split(',')[0].trim() : 'unknown'
+}
+
+function checkBruteForce(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now()
+  const entry = loginAttempts.get(ip)
+  if (entry) {
+    if (entry.lockedUntil > now) {
+      return { allowed: false, retryAfter: Math.ceil((entry.lockedUntil - now) / 1000) }
+    }
+    if (entry.lockedUntil <= now) {
+      loginAttempts.delete(ip)
+    }
+  }
+  return { allowed: true }
+}
+
+function recordFailedAttempt(ip: string) {
+  const now = Date.now()
+  const entry = loginAttempts.get(ip)
+  const count = (entry?.count ?? 0) + 1
+  loginAttempts.set(ip, {
+    count,
+    lockedUntil: count >= MAX_ATTEMPTS ? now + LOCKOUT_MS : 0,
+  })
+}
 
 export async function POST(request: Request) {
-  try {
-    // Handle both JSON and form data
-    let username: string | undefined
-    let password: string | undefined
+  const ip = getClientIp(request)
+  const bruteForce = checkBruteForce(ip)
+  if (!bruteForce.allowed) {
+    return NextResponse.json(
+      { error: `Too many failed attempts. Try again in ${bruteForce.retryAfter} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(bruteForce.retryAfter) } }
+    )
+  }
 
-    const contentType = request.headers.get('content-type')
-    
-    if (contentType?.includes('application/json')) {
-      // JSON request (from JavaScript)
-      const body = await request.json()
-      username = body.username
-      password = body.password
-    } else if (contentType?.includes('application/x-www-form-urlencoded')) {
-      // Form submission (HTML form)
-      const formData = await request.formData()
-      username = formData.get('username') as string
-      password = formData.get('password') as string
-    }
+  try {
+    const body = await request.json()
+    const username = body.username?.trim()
+    const password = body.password
 
     if (!username || !password) {
-      // For form submissions, return HTML error page
-      if (contentType?.includes('application/x-www-form-urlencoded')) {
-        return new Response(`
-          <html>
-            <body style="font-family: Arial, sans-serif; max-width: 400px; margin: 100px auto; padding: 20px;">
-              <h1 style="color: #dc3545;">Login Error</h1>
-              <p>Username and password are required.</p>
-              <a href="/admin/login-simple" style="color: #007bff;">Back to Login</a>
-            </body>
-          </html>
-        `, {
-          status: 400,
-          headers: { 'Content-Type': 'text/html' }
-        })
-      }
-      
-      return NextResponse.json(
-        { error: 'Username and password required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Username and password are required.' }, { status: 400 })
     }
 
-    const isValid = validateCredentials(username, password)
-
-    if (isValid) {
-      // For form submissions, redirect to admin dashboard
-      if (contentType?.includes('application/x-www-form-urlencoded')) {
-        const response = NextResponse.redirect(new URL('/admin', request.url))
-        
-        // Set secure cookie
-        response.cookies.set('admin-auth', 'true', {
-          httpOnly: false, // Allow client-side access for authentication check
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 3600, // 1 hour for better security
-          path: '/',
-        })
-
-        return response
-      }
-      
-      // For JSON requests, return success
-      const response = NextResponse.json({ success: true })
-      
-      // Set secure cookie
-      response.cookies.set('admin-auth', 'true', {
-        httpOnly: false, // Allow client-side access for authentication check
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 3600, // 1 hour for better security
-        path: '/',
-      })
-
-      return response
-    } else {
-      // For form submissions, redirect back to login with error
-      if (contentType?.includes('application/x-www-form-urlencoded')) {
-        return NextResponse.redirect(new URL('/admin?error=invalid', request.url))
-      }
-      
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      )
+    const isValid = await validateCredentials(username, password)
+    if (!isValid) {
+      recordFailedAttempt(ip)
+      return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 })
     }
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Authentication failed' },
-      { status: 500 }
-    )
+
+    // Success — generate token
+    loginAttempts.delete(ip)
+    const token = await signToken({ user: username })
+
+    return NextResponse.json({ 
+      success: true,
+      token: token 
+    })
+  } catch {
+    return NextResponse.json({ error: 'Authentication failed.' }, { status: 500 })
   }
 }

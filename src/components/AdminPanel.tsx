@@ -47,6 +47,10 @@ export default function AdminPanel() {
           <h2 className="font-black text-xl uppercase mb-2">Edit Website Navigation</h2>
           <p className="text-gray-600 font-medium text-sm">Customize public website navigation bar.</p>
         </Link>
+        <Link href="/admin/settings" className="p-6 border-4 border-pink-500 shadow-[4px_4px_0px_0px_rgba(236,72,153,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all bg-pink-50">
+          <h2 className="font-black text-xl uppercase mb-2 text-pink-600">Settings</h2>
+          <p className="text-gray-600 font-medium text-sm">Configure Instagram integration and auto-creation settings.</p>
+        </Link>
       </div>
     </div>
   )

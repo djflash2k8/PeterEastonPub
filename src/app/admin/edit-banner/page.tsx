@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import MediaLibrary from '@/components/Admin/MediaLibrary'
 
 interface BannerData {
   url: string
@@ -31,6 +32,7 @@ export default function EditBanner() {
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [editMode, setEditMode] = useState(false)
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false)
   const [editSettings, setEditSettings] = useState({
     crop: { x: 0, y: 0, width: 100, height: 100 },
     resize: { width: 1920, height: 400 },
@@ -81,14 +83,17 @@ export default function EditBanner() {
     setMessage('')
 
     try {
-      if (!selectedFile) {
-        setMessage('Please select an image file')
+      const formData = new FormData()
+      
+      if (selectedFile) {
+        formData.append('file', selectedFile)
+      } else if (banner.url) {
+        formData.append('imageUrl', banner.url)
+      } else {
+        setMessage('Please select an image file or choose from library')
         setIsSaving(false)
         return
       }
-
-      const formData = new FormData()
-      formData.append('file', selectedFile)
 
       // Add editing settings if edit mode is enabled
       if (editMode) {
@@ -97,8 +102,12 @@ export default function EditBanner() {
         formData.append('quality', editSettings.quality.toString())
       }
 
+      const token = localStorage.getItem('admin_token')
       const response = await fetch('/api/banner', {
         method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       })
 
@@ -142,6 +151,18 @@ export default function EditBanner() {
         <h1 className="text-2xl font-bold">Edit Banner</h1>
       </div>
 
+      {showMediaLibrary && (
+        <MediaLibrary 
+          onClose={() => setShowMediaLibrary(false)}
+          onSelect={(url) => {
+            setBanner({ ...banner, url })
+            setSelectedFile(null)
+            setShowMediaLibrary(false)
+            setMessage('Image selected from library. Click Save to apply.')
+          }}
+        />
+      )}
+
       {message && (
         <div className={`mb-4 p-3 rounded ${message.includes('successfully') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
           {message}
@@ -184,12 +205,21 @@ export default function EditBanner() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2">Select Image File</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="w-full border rounded px-3 py-2"
-              />
+              <div className="flex gap-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="flex-1 border rounded px-3 py-2"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowMediaLibrary(true)}
+                  className="bg-gray-800 text-white px-4 py-2 rounded font-bold hover:bg-gray-700 transition-colors"
+                >
+                  Choose from Library
+                </button>
+              </div>
               <p className="text-xs text-gray-500 mt-1">
                 Supported formats: JPG, PNG, GIF, WebP. Recommended size: 1920x400px
               </p>

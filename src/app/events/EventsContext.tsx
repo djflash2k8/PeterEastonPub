@@ -24,12 +24,12 @@ const EventsContext = createContext<EventsContextType | undefined>(undefined)
 
 export function EventsProvider({ children }: { children: ReactNode }) {
   const [events, setEvents] = useState<Event[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   const fetchEvents = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/events')
+      const response = await fetch(`/api/events?t=${Date.now()}`)
       if (!response.ok) throw new Error('Failed to fetch events')
       const data = await response.json()
       setEvents(data)
@@ -41,7 +41,14 @@ export function EventsProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    fetchEvents()
+    // Only fetch events if we're on a page that needs them
+    // Check if we're on the events page or admin pages that need events
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname
+      if (pathname.includes('/events') || pathname.includes('/admin/edit-events')) {
+        fetchEvents()
+      }
+    }
   }, [])
 
   return (

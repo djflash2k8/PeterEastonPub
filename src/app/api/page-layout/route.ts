@@ -40,8 +40,8 @@ async function initializeLayout() {
     // Try to read from file system for development
     if (process.env.NODE_ENV === 'development') {
       try {
-        const { readFile } = require('fs/promises')
-        const path = require('path')
+        const { readFile } = await import('fs/promises')
+        const path = await import('path')
         const LAYOUT_FILE = path.join(process.cwd(), 'data', 'page-layout.json')
         const data = await readFile(LAYOUT_FILE, 'utf-8')
         pageLayout = JSON.parse(data)
@@ -67,9 +67,9 @@ async function saveLayout(layout: any) {
   // In development, try to save to file system
   if (process.env.NODE_ENV === 'development') {
     try {
-      const { writeFile } = require('fs/promises')
-      const path = require('path')
-      const fs = require('fs')
+      const { writeFile } = await import('fs/promises')
+      const path = await import('path')
+      const fs = await import('fs')
       
       const dataDir = path.join(process.cwd(), 'data')
       if (!fs.existsSync(dataDir)) {

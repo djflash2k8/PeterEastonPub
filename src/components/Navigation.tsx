@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 interface NavigationItem {
   id: string
@@ -17,38 +18,26 @@ interface FrontendNavigationSettings {
 
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const pathname = usePathname()
   const [navigation, setNavigation] = useState<FrontendNavigationSettings>({
     brandName: "Peter Easton's Pub",
     navigationItems: [
-      {
-        id: 'home',
-        text: 'Home',
-        href: '/',
-        target: '_self'
-      },
-      {
-        id: 'events',
-        text: 'Events',
-        href: '/events',
-        target: '_self'
-      },
-      {
-        id: 'about',
-        text: 'About Us',
-        href: '/about-us',
-        target: '_self'
-      },
-      {
-        id: 'contact',
-        text: 'Contact Us',
-        href: '/contact-us',
-        target: '_self'
-      }
+      { id: 'home', text: 'Home', href: '/', target: '_self' },
+      { id: 'events', text: 'Events', href: '/events', target: '_self' },
+      { id: 'about', text: 'About Us', href: '/about-us', target: '_self' },
+      { id: 'contact', text: 'Contact Us', href: '/contact-us', target: '_self' },
     ]
   })
 
   useEffect(() => {
     fetchNavigation()
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   const fetchNavigation = async () => {
@@ -61,81 +50,103 @@ export default function Navigation() {
     }
   }
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen)
-  }
-
-  const closeMenu = () => {
-    setIsMenuOpen(false)
-  }
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
+  const closeMenu = () => setIsMenuOpen(false)
 
   return (
-    <nav className="bg-gray-800 text-white relative">
-      <div className="px-4 sm:px-6 lg:px-8">
+    <nav
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? 'shadow-lg'
+          : ''
+      }`}
+      style={{
+        backgroundColor: scrolled ? 'rgba(26, 28, 30, 0.97)' : '#1A1C1E',
+        borderBottom: '1px solid rgba(243, 179, 64, 0.18)',
+        backdropFilter: scrolled ? 'blur(8px)' : 'none',
+      }}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo/Brand */}
-          <div className="flex items-center">
-            <span className="text-xl font-bold">{navigation.brandName}</span>
-          </div>
+
+          {/* Brand / Logo */}
+          <Link
+            href="/"
+            className="flex items-center gap-2 group"
+            style={{ textDecoration: 'none' }}
+            onClick={closeMenu}
+          >
+            <span
+              className="text-xl font-bold tracking-tight transition-colors duration-200"
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                color: '#F3B340',
+              }}
+            >
+              {navigation.brandName}
+            </span>
+          </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
-              {navigation.navigationItems.map(item => (
-                <Link 
+          <div className="hidden md:flex items-center gap-1">
+            {navigation.navigationItems.map(item => {
+              const isActive = pathname === item.href
+              return (
+                <Link
                   key={item.id}
-                  href={item.href} 
+                  href={item.href}
                   target={item.target}
-                  className="hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
                   onClick={closeMenu}
+                  className="relative px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 group"
+                  style={{
+                    color: isActive ? '#F3B340' : '#E0E0E0',
+                    backgroundColor: isActive ? 'rgba(243, 179, 64, 0.1)' : 'transparent',
+                    textDecoration: 'none',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.color = '#F3B340'
+                      ;(e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(243, 179, 64, 0.08)'
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isActive) {
+                      (e.currentTarget as HTMLElement).style.color = '#E0E0E0'
+                      ;(e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
+                    }
+                  }}
                 >
                   {item.text}
+                  {isActive && (
+                    <span
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full"
+                      style={{ backgroundColor: '#F3B340' }}
+                    />
+                  )}
                 </Link>
-              ))}
-            </div>
+              )
+            })}
           </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden">
             <button
               onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors"
+              className="p-2 rounded-md transition-colors duration-200"
+              style={{ color: '#E0E0E0' }}
               aria-controls="mobile-menu"
               aria-expanded={isMenuOpen}
             >
               <span className="sr-only">Open main menu</span>
-              {/* Hamburger icon */}
-              <svg
-                className={`${isMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-              {/* Close icon */}
-              <svg
-                className={`${isMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              {isMenuOpen ? (
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
             </button>
           </div>
         </div>
@@ -143,19 +154,35 @@ export default function Navigation() {
 
       {/* Mobile menu panel */}
       {isMenuOpen && (
-        <div className="md:hidden" id="mobile-menu">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {navigation.navigationItems.map(item => (
-              <Link
-                key={item.id}
-                href={item.href}
-                target={item.target}
-                className="hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                onClick={closeMenu}
-              >
-                {item.text}
-              </Link>
-            ))}
+        <div
+          className="md:hidden border-t"
+          id="mobile-menu"
+          style={{
+            backgroundColor: '#1A1C1E',
+            borderColor: 'rgba(243, 179, 64, 0.15)',
+          }}
+        >
+          <div className="px-3 pt-2 pb-4 space-y-1">
+            {navigation.navigationItems.map(item => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  target={item.target}
+                  onClick={closeMenu}
+                  className="block px-4 py-3 rounded-lg text-base font-medium transition-all duration-200"
+                  style={{
+                    color: isActive ? '#F3B340' : '#E0E0E0',
+                    backgroundColor: isActive ? 'rgba(243, 179, 64, 0.1)' : 'transparent',
+                    textDecoration: 'none',
+                    borderLeft: isActive ? '3px solid #F3B340' : '3px solid transparent',
+                  }}
+                >
+                  {item.text}
+                </Link>
+              )
+            })}
           </div>
         </div>
       )}

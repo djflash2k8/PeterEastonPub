@@ -5,8 +5,8 @@ import Providers from '@/components/Providers'
 import DynamicStyling from '@/components/DynamicStyling'
 
 export const metadata: Metadata = {
-  title: 'Website',
-  description: 'A full-stack website with navigation, calendar, and admin backend. A Jonathan Kelly project',
+  title: "Peter Easton's Pub | St. John's, NL",
+  description: "Peter Easton's Pub — your local destination for live music, karaoke, open mic nights, and great times in the heart of St. John's, Newfoundland.",
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
@@ -28,6 +28,9 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* Google Fonts preconnect for performance */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body>
         <DynamicStyling />

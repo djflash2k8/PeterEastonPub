@@ -1,101 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
-import { writeFile } from 'fs/promises'
+import { getDocumentFromFirebase, setDocumentInFirebase } from '@/lib/firebase'
+import { verifyToken } from '@/lib/auth'
 
-const navigationFile = path.join(process.cwd(), 'src/lib/admin-navigation.json')
+const COLLECTION = 'site-config'
+const DOC_ID = 'admin-navigation'
 
-const defaultNavigation = {
-  adminTitle: 'Peter Easton Admin',
+const DEFAULT_NAVIGATION = {
+  adminTitle: "Peter Easton Admin",
   navigationItems: [
-    {
-      id: 'dashboard',
-      text: 'Dashboard',
-      href: '/admin',
-      target: '_self'
-    },
-    {
-      id: 'about',
-      text: 'About Us',
-      href: '/admin/about',
-      target: '_self'
-    },
-    {
-      id: 'viewSite',
-      text: 'View Site',
-      href: '/',
-      target: '_blank'
-    }
-  ]
+    { id: 'dashboard', text: 'Dashboard', href: '/admin',       target: '_self' },
+    { id: 'about',     text: 'About Us',  href: '/admin/about', target: '_self' },
+    { id: 'viewSite',  text: 'View Site', href: '/',            target: '_blank' },
+  ],
 }
 
-// In-memory storage for production (Vercel serverless)
-let inMemoryNavigation: any = null
-
-// Initialize file if it doesn't exist
-if (!fs.existsSync(path.dirname(navigationFile))) {
-  fs.mkdirSync(path.dirname(navigationFile), { recursive: true })
-}
-
-if (!fs.existsSync(navigationFile)) {
-  fs.writeFileSync(navigationFile, JSON.stringify(defaultNavigation, null, 2))
+function getAuthToken(request: Request): string | null {
+  const authHeader = request.headers.get('Authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7)
+  }
+  return null
 }
 
 export async function GET() {
   try {
-    let navigation
-    
-    // In production (Vercel), use in-memory storage
-    if (process.env.NODE_ENV === 'production') {
-      if (!inMemoryNavigation) {
-        // Try to read from file first, then fallback to default
-        try {
-          if (fs.existsSync(navigationFile)) {
-            const fileContent = fs.readFileSync(navigationFile, 'utf-8')
-            navigation = JSON.parse(fileContent)
-          } else {
-            navigation = defaultNavigation
-          }
-        } catch {
-          navigation = defaultNavigation
-        }
-        inMemoryNavigation = navigation
-      } else {
-        navigation = inMemoryNavigation
-      }
-    } else {
-      // In development, read from file
-      if (fs.existsSync(navigationFile)) {
-        const fileContent = fs.readFileSync(navigationFile, 'utf-8')
-        navigation = JSON.parse(fileContent)
-      } else {
-        navigation = defaultNavigation
-        fs.writeFileSync(navigationFile, JSON.stringify(defaultNavigation, null, 2))
-      }
-    }
-    
-    return NextResponse.json(navigation)
-  } catch (error) {
-    console.error('Error fetching admin navigation:', error)
-    return NextResponse.json(defaultNavigation)
+    const data = await getDocumentFromFirebase(COLLECTION, DOC_ID)
+    return NextResponse.json(data ?? DEFAULT_NAVIGATION)
+  } catch {
+    return NextResponse.json(DEFAULT_NAVIGATION)
   }
 }
 
 export async function PUT(request: NextRequest) {
+  const token = getAuthToken(request)
+  if (!token || !verifyToken(token)) {
+    return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 })
+  }
+
   try {
     const data = await request.json()
-    
-    // Update in-memory storage for production
-    if (process.env.NODE_ENV === 'production') {
-      inMemoryNavigation = data
-    }
-    
-    // Save to file
-    await writeFile(navigationFile, JSON.stringify(data, null, 2))
-    
-    return NextResponse.json({ success: true, data })
-  } catch (error) {
-    console.error('Error updating admin navigation:', error)
-    return NextResponse.json({ error: 'Failed to update navigation' }, { status: 500 })
+    await setDocumentInFirebase(COLLECTION, DOC_ID, { ...data, updatedAt: new Date().toISOString() })
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: 'Failed to update navigation.' }, { status: 500 })
   }
 }

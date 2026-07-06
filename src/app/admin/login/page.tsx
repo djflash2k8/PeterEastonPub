@@ -1,48 +1,45 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export default function AdminLogin() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    console.log('handleSubmit called')
+  // Clear any old tokens on mount
+  useEffect(() => {
+    localStorage.removeItem('admin_token')
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
 
-    console.log('Login attempt:', { username, password: '***' })
+    const form = e.currentTarget
+    const username = (form.elements.namedItem('username') as HTMLInputElement).value
+    const password = (form.elements.namedItem('password') as HTMLInputElement).value
 
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       })
 
-      console.log('Response status:', response.status)
       const data = await response.json()
-      console.log('Response data:', data)
 
-      if (response.ok && data.success) {
-        console.log('Login successful, redirecting...')
-        router.push('/admin')
+      if (response.ok && data.success && data.token) {
+        // Save to localStorage — 100% reliable, no SameSite/Secure cookie issues
+        localStorage.setItem('admin_token', data.token)
+        window.location.href = '/admin'
       } else {
-        console.log('Login failed:', data.error)
-        setError(data.error || 'Invalid credentials')
+        setError(data.error || 'Invalid credentials. Please try again.')
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.log('Login error:', error)
-      setError('An error occurred during login')
-    } finally {
+    } catch {
+      setError('An error occurred. Please try again.')
       setIsLoading(false)
     }
   }
@@ -63,13 +60,11 @@ export default function AdminLogin() {
             Peter Easton&apos;s Pub Management System
           </p>
         </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit} action="/api/auth/login" method="POST">
+
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="username" className="sr-only">
-                Username
-              </label>
+              <label htmlFor="username" className="sr-only">Username</label>
               <input
                 id="username"
                 name="username"
@@ -77,14 +72,10 @@ export default function AdminLogin() {
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
+              <label htmlFor="password" className="sr-only">Password</label>
               <input
                 id="password"
                 name="password"
@@ -92,14 +83,12 @@ export default function AdminLogin() {
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm text-center">
               {error}
             </div>
           )}
@@ -108,27 +97,14 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </span>
-              ) : (
-                'Sign in'
-              )}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
 
           <div className="text-center">
-            <Link 
-              href="/" 
-              className="text-blue-600 hover:text-blue-500 text-sm font-medium"
-            >
+            <Link href="/" className="text-blue-600 hover:text-blue-500 text-sm font-medium">
               Back to Website
             </Link>
           </div>
