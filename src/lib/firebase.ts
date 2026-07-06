@@ -29,15 +29,16 @@ try {
   } else {
     console.log('Initializing Firebase Admin SDK...')
     const admin = require('firebase-admin')
+    const { getFirestore: getAdminFirestore } = require('firebase-admin/firestore')
     app = admin.initializeApp({
       projectId,
-      credential: admin.credential.cert({
+      credential: admin.cert({
         projectId,
         clientEmail,
         privateKey: privateKey.replace(/\\n/g, '\n'),
       }),
     })
-    db = admin.firestore('peweb')
+    db = getAdminFirestore(app)
     firebaseAvailable = true
     console.log('Firebase Admin SDK initialized successfully')
   }
