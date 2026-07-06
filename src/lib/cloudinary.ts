@@ -1,5 +1,3 @@
-import crypto from 'crypto'
-
 // Cloudinary configuration
 const cloudinaryConfig = {
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dci3a6zp4',
@@ -8,36 +6,21 @@ const cloudinaryConfig = {
   secure: true
 }
 
-/**
- * Helper function to upload image to Cloudinary using Signed REST API
- * This is more secure and doesn't rely on an 'upload_preset' being created in the UI.
- */
+// Helper function to upload image to Cloudinary using REST API
 export async function uploadImageToCloudinary(file: File, folder: string = 'events') {
   try {
     const buffer = await file.arrayBuffer()
     const base64String = Buffer.from(buffer).toString('base64')
     const dataUrl = `data:${file.type};base64,${base64String}`
     
-    const timestamp = Math.round(new Date().getTime() / 1000)
-    
-    // Create signature for authenticated upload
-    // Parameters must be in alphabetical order for signing
-    const signatureParams = `folder=${folder}&timestamp=${timestamp}${cloudinaryConfig.api_secret}`
-    const signature = crypto
-      .createHash('sha1')
-      .update(signatureParams)
-      .digest('hex')
-    
     // Create form data for Cloudinary upload
     const formData = new FormData()
     formData.append('file', dataUrl)
     formData.append('folder', folder)
-    formData.append('timestamp', timestamp.toString())
-    formData.append('api_key', cloudinaryConfig.api_key)
-    formData.append('signature', signature)
+    formData.append('upload_preset', 'ml_default')
     
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloud_name}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloud_name}/auto/upload`,
       {
         method: 'POST',
         body: formData,
@@ -45,14 +28,12 @@ export async function uploadImageToCloudinary(file: File, folder: string = 'even
     )
     
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Cloudinary raw error:', errorText)
-      throw new Error(`Cloudinary upload failed: ${response.statusText} - ${errorText}`)
+      throw new Error(`Cloudinary upload failed: ${response.statusText}`)
     }
     
     const result = await response.json()
     
-    console.log('Image uploaded to Cloudinary successfully:', result.secure_url)
+    console.log('Image uploaded to Cloudinary:', result.secure_url)
     return {
       success: true,
       url: result.secure_url,

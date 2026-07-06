@@ -1,47 +1,114 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDocumentFromFirebase, setDocumentInFirebase } from '@/lib/firebase'
-import { verifyToken } from '@/lib/auth'
+import path from 'path'
 
-const COLLECTION = 'site-config'
-const DOC_ID = 'admin-navigation'
+const navigationFile = path.join(process.cwd(), 'src/lib/admin-navigation.json')
 
-const DEFAULT_NAVIGATION = {
-  adminTitle: "Peter Easton Admin",
+const defaultNavigation = {
+  adminTitle: 'Peter Easton Admin',
   navigationItems: [
-    { id: 'dashboard', text: 'Dashboard', href: '/admin',       target: '_self' },
-    { id: 'about',     text: 'About Us',  href: '/admin/about', target: '_self' },
-    { id: 'viewSite',  text: 'View Site', href: '/',            target: '_blank' },
-  ],
+    {
+      id: 'dashboard',
+      text: 'Dashboard',
+      href: '/admin',
+      target: '_self'
+    },
+    {
+      id: 'about',
+      text: 'About Us',
+      href: '/admin/about',
+      target: '_self'
+    },
+    {
+      id: 'viewSite',
+      text: 'View Site',
+      href: '/',
+      target: '_blank'
+    }
+  ]
 }
 
-function getAuthToken(request: Request): string | null {
-  const authHeader = request.headers.get('Authorization')
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.substring(7)
+// In-memory storage for production (Vercel serverless)
+let inMemoryNavigation: any = null
+
+// Initialize file if it doesn't exist
+const initializeFile = async () => {
+  try {
+    const fs = await import('fs')
+    const pathModule = await import('path')
+    
+    if (!fs.existsSync(pathModule.dirname(navigationFile))) {
+      fs.mkdirSync(pathModule.dirname(navigationFile), { recursive: true })
+    }
+
+    if (!fs.existsSync(navigationFile)) {
+      fs.writeFileSync(navigationFile, JSON.stringify(defaultNavigation, null, 2))
+    }
+  } catch (error) {
+    console.error('Failed to initialize file:', error)
   }
-  return null
 }
+
+// Initialize file
+initializeFile()
 
 export async function GET() {
   try {
-    const data = await getDocumentFromFirebase(COLLECTION, DOC_ID)
-    return NextResponse.json(data ?? DEFAULT_NAVIGATION)
-  } catch {
-    return NextResponse.json(DEFAULT_NAVIGATION)
+    let navigation
+    
+    // In production (Vercel), use in-memory storage
+    if (process.env.NODE_ENV === 'production') {
+      if (!inMemoryNavigation) {
+        // Try to read from file first, then fallback to default
+        try {
+          const fs = await import('fs')
+          if (fs.existsSync(navigationFile)) {
+            const fileContent = fs.readFileSync(navigationFile, 'utf-8')
+            navigation = JSON.parse(fileContent)
+          } else {
+            navigation = defaultNavigation
+          }
+        } catch {
+          navigation = defaultNavigation
+        }
+        inMemoryNavigation = navigation
+      } else {
+        navigation = inMemoryNavigation
+      }
+    } else {
+      // In development, read from file
+      const fs = await import('fs')
+      if (fs.existsSync(navigationFile)) {
+        const fileContent = fs.readFileSync(navigationFile, 'utf-8')
+        navigation = JSON.parse(fileContent)
+      } else {
+        navigation = defaultNavigation
+        fs.writeFileSync(navigationFile, JSON.stringify(defaultNavigation, null, 2))
+      }
+    }
+    
+    return NextResponse.json(navigation)
+  } catch (error) {
+    console.error('Error fetching admin navigation:', error)
+    return NextResponse.json(defaultNavigation)
   }
 }
 
 export async function PUT(request: NextRequest) {
-  const token = getAuthToken(request)
-  if (!token || !verifyToken(token)) {
-    return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 })
-  }
-
   try {
     const data = await request.json()
-    await setDocumentInFirebase(COLLECTION, DOC_ID, { ...data, updatedAt: new Date().toISOString() })
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to update navigation.' }, { status: 500 })
+    
+    // Update in-memory storage for production
+    if (process.env.NODE_ENV === 'production') {
+      inMemoryNavigation = data
+    }
+    
+    // Save to file
+    const { writeFile } = await import('fs/promises')
+    await writeFile(navigationFile, JSON.stringify(data, null, 2))
+    
+    return NextResponse.json({ success: true, data })
+  } catch (error) {
+    console.error('Error updating admin navigation:', error)
+    return NextResponse.json({ error: 'Failed to update navigation' }, { status: 500 })
   }
 }

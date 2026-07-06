@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 interface NavigationItem {
@@ -48,37 +48,40 @@ export default function AdminLayout({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [navigation, setNavigation] = useState<NavigationSettings>(defaultNavigation)
   const router = useRouter()
-  const pathname = usePathname()
-
-  const isLoginPage = pathname === '/admin/login'
 
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('admin_token')
-      
-      if (token) {
-        setIsAuthenticated(true)
-        // If logged in and on login page, go to dashboard
-        if (isLoginPage) {
-          router.replace('/admin')
-        }
-      } else {
-        setIsAuthenticated(false)
-        // Only redirect to login if NOT already on the login page
-        if (!isLoginPage) {
-          router.replace('/admin/login')
-        }
+    checkAuth()
+    // Check for error in URL parameters using URLSearchParams
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const error = urlParams.get('error')
+      if (error === 'invalid') {
+        setLoginError('Invalid username or password')
+        // Clear error from URL but stay on login page
+        const url = new URL(window.location.href)
+        url.searchParams.delete('error')
+        window.history.replaceState({}, '', url.toString())
       }
     }
+  }, [])
 
-    checkAuth()
-  }, [router, isLoginPage])
+  const checkAuth = () => {
+    const authCookie = document.cookie
+      .split('; ')
+      .find(cookie => cookie.trim().startsWith('admin-auth='))
+
+    if (authCookie) {
+      setIsAuthenticated(true)
+    } else {
+      setIsAuthenticated(false)
+    }
+  }
 
   useEffect(() => {
-    if (isAuthenticated && !isLoginPage) {
+    if (isAuthenticated) {
       fetchNavigation()
     }
-  }, [isAuthenticated, isLoginPage])
+  }, [isAuthenticated])
 
   const fetchNavigation = async () => {
     try {
