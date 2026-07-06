@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 
 interface NavigationItem {
@@ -99,6 +99,9 @@ export default function AdminLayout({
       console.error('Failed to fetch navigation settings:', error)
     }
   }
+
+  const pathname = usePathname()
+  const isLoginPage = pathname === '/admin/login'
 
   const handleLogout = () => {
     localStorage.removeItem('admin_token')
