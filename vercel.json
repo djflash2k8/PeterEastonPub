@@ -1,15 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/instagram-sync",
-<<<<<<< HEAD
-      "schedule": "0 0 * * *"
-    }
-  ]
-}
-=======
-      "schedule": "0 */6 * * *"
-    }
-  ]
-}
->>>>>>> e0a5819471b71fea4a8fe0f9cd73a7d62950d7ce
+{}
