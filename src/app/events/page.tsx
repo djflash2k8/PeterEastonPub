@@ -1,11 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Event, useEvents } from './EventsContext'
+import { useState } from 'react'
+import { useEvents } from './EventsContext'
+import EventModal from '@/components/EventModal'
 
 export default function PublicEventsPage() {
   const { events, loading } = useEvents()
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const openModal = (event: any) => {
+    setSelectedEvent(event)
+    setIsModalOpen(true)
+  }
 
   const format12Hour = (time?: string) => {
     if (!time) return ''
@@ -51,12 +58,11 @@ export default function PublicEventsPage() {
               <div className="space-y-6">
                 {upcomingEvents.length > 0 ? (
                   upcomingEvents.map(event => (
-                    <button
+                    <div
                       key={event.id}
-                      type="button"
-                      onClick={() => setSelectedEvent(event)}
-                      className="pub-card flex flex-col md:flex-row gap-0 overflow-hidden text-left cursor-pointer transition-shadow duration-300 hover:shadow-[0_20px_60px_rgba(0,0,0,0.25)]"
+                      className="pub-card flex flex-col md:flex-row gap-0 overflow-hidden cursor-pointer hover:bg-[#242628] transition-colors duration-300"
                       style={{ borderLeft: '4px solid #F3B340' }}
+                      onClick={() => openModal(event)}
                     >
                       {event.imageUrl && (
                         <div className="w-full md:w-52 h-64 md:h-48 flex-shrink-0 overflow-hidden">
@@ -101,7 +107,7 @@ export default function PublicEventsPage() {
                           {event.description}
                         </p>
                       </div>
-                    </button>
+                    </div>
                   ))
                 ) : (
                   <div
@@ -123,66 +129,6 @@ export default function PublicEventsPage() {
               </div>
             </section>
 
-            {selectedEvent && (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="event-modal-title"
-                onClick={() => setSelectedEvent(null)}
-              >
-                <div
-                  className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-yellow-400/20 bg-[#1A1C1E] shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelectedEvent(null)}
-                    className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-yellow-400/20 bg-yellow-400/10 text-yellow-300 transition hover:bg-yellow-400/20"
-                    aria-label="Close event details"
-                  >
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-
-                  {selectedEvent.imageUrl && (
-                    <div className="h-64 overflow-hidden bg-[#242628] sm:h-80">
-                      <img
-                        src={selectedEvent.imageUrl}
-                        alt={selectedEvent.title}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  )}
-
-                  <div className="p-6 sm:p-8">
-                    <h2
-                      id="event-modal-title"
-                      className="text-3xl font-bold leading-tight"
-                      style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F3B340' }}
-                    >
-                      {selectedEvent.title}
-                    </h2>
-                    <div className="mt-4 flex flex-wrap gap-3 text-sm">
-                      <span className="inline-flex items-center rounded-full border border-yellow-400/20 bg-yellow-400/10 px-3 py-1 text-yellow-300">
-                        {selectedEvent.date}
-                      </span>
-                      {selectedEvent.startTime && (
-                        <span className="inline-flex items-center rounded-full border border-gray-700 bg-gray-800/80 px-3 py-1 text-gray-200">
-                          {format12Hour(selectedEvent.startTime)}
-                          {selectedEvent.endTime ? ` – ${format12Hour(selectedEvent.endTime)}` : ''}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-5 leading-relaxed text-sm" style={{ color: '#E0E0E0' }}>
-                      {selectedEvent.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Past Events Gallery */}
             {pastEvents.length > 0 && (
               <section
@@ -199,8 +145,9 @@ export default function PublicEventsPage() {
                   {pastEvents.map(event => (
                     <div
                       key={event.id}
-                      className="rounded-lg overflow-hidden text-center"
+                      className="rounded-lg overflow-hidden text-center cursor-pointer"
                       style={{ background: '#242628', border: '1px solid rgba(243,179,64,0.1)' }}
+                      onClick={() => openModal(event)}
                     >
                       {event.imageUrl && (
                         <img src={event.imageUrl} alt="" className="w-full h-24 object-cover" />
@@ -219,6 +166,12 @@ export default function PublicEventsPage() {
           </div>
         )}
       </main>
+
+      <EventModal 
+        event={selectedEvent} 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </div>
   )
 }

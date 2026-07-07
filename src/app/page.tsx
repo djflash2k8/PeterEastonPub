@@ -3,6 +3,7 @@
 import Banner from '@/components/Banner'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import EventModal from '@/components/EventModal'
 
 // Icon map for offerings
 const offeringIcons: Record<string, string> = {
@@ -61,6 +62,13 @@ export default function Home() {
     imageUrl?: string
   } | null>(null)
   const [loading, setLoading] = useState(true)
+  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const openModal = (event: any) => {
+    setSelectedEvent(event)
+    setIsModalOpen(true)
+  }
 
   useEffect(() => {
     const loadData = async () => {
@@ -142,8 +150,9 @@ export default function Home() {
             <section>
               <h2 className="section-heading">Next Event</h2>
               <div
-                className="pub-card p-5 flex flex-col sm:flex-row gap-5"
+                className="pub-card p-5 flex flex-col sm:flex-row gap-5 cursor-pointer hover:bg-[#242628] transition-colors duration-300"
                 style={{ borderLeft: '4px solid #F3B340' }}
+                onClick={() => openModal(nextEvent)}
               >
                 {nextEvent.imageUrl && (
                   <div className="flex-shrink-0">
@@ -245,6 +254,12 @@ export default function Home() {
 
         </div>
       </main>
+
+      <EventModal 
+        event={selectedEvent} 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </div>
   )
 }
