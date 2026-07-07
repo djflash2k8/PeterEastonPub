@@ -1,110 +1,124 @@
-import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
-import { randomUUID } from 'crypto';
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { randomUUID } from 'crypto'
+import path from 'path'
 
-// Allowed file types and size limits
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_FILENAME_LENGTH = 255;
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
+const MAX_FILENAME_LENGTH = 200
 
-function validateFile(file: File): { isValid: boolean; error?: string } {
-  // Check file size
-  if (file.size > MAX_FILE_SIZE) {
-    return {
-      isValid: false,
-      error: `File size exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit`
-    };
-  }
-
-  // Check file type
-  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-    return {
-      isValid: false,
-      error: `File type ${file.type} is not allowed. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}`
-    };
-  }
-
-  // Check filename
-  const fileName = file.name;
-  if (!fileName || fileName.length > MAX_FILENAME_LENGTH) {
-    return {
-      isValid: false,
-      error: 'Invalid filename or filename too long'
-    };
-  }
-
-  // Check for dangerous file extensions
-  const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif', '.com', '.js', '.php', '.asp', '.jsp'];
-  const fileExtension = path.extname(fileName).toLowerCase();
-  if (dangerousExtensions.includes(fileExtension)) {
-    return {
-      isValid: false,
-      error: `File extension ${fileExtension} is not allowed`
-    };
-  }
-
-  // Check for path traversal attempts
-  if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\')) {
-    return {
-      isValid: false,
-      error: 'Invalid filename characters'
-    };
-  }
-
-  return { isValid: true };
+// Magic bytes for allowed image types
+const MAGIC_BYTES: Record<string, number[][]> = {
+  'image/jpeg': [[0xff, 0xd8, 0xff]],
+  'image/png':  [[0x89, 0x50, 0x4e, 0x47]],
+  'image/gif':  [[0x47, 0x49, 0x46, 0x38]],
+  'image/webp': [[0x52, 0x49, 0x46, 0x46]], // RIFF header
 }
 
-function sanitizeFileName(fileName: string): string {
-  // Remove path separators and dangerous characters
-  return fileName
+function verifyMagicBytes(buffer: Buffer, mimeType: string): boolean {
+  const signatures = MAGIC_BYTES[mimeType]
+  if (!signatures) return false
+  return signatures.some(sig =>
+    sig.every((byte, i) => buffer[i] === byte)
+  )
+}
+
+function validateFile(file: File): { isValid: boolean; error?: string } {
+  if (file.size > MAX_FILE_SIZE)
+    return { isValid: false, error: `File exceeds the ${MAX_FILE_SIZE / (1024 * 1024)} MB limit.` }
+
+  if (!ALLOWED_MIME_TYPES.includes(file.type))
+    return { isValid: false, error: `File type "${file.type}" is not allowed.` }
+
+  const name = file.name
+  if (!name || name.length > MAX_FILENAME_LENGTH)
+    return { isValid: false, error: 'Filename is missing or too long.' }
+
+  if (name.includes('..') || name.includes('/') || name.includes('\\'))
+    return { isValid: false, error: 'Filename contains invalid characters.' }
+
+  return { isValid: true }
+}
+
+function sanitizeFileName(name: string): string {
+  return name
     .replace(/[^a-zA-Z0-9.-]/g, '_')
     .replace(/\.\./g, '_')
-    .replace(/\s+/g, '-')
-    .substring(0, MAX_FILENAME_LENGTH);
+    .substring(0, MAX_FILENAME_LENGTH)
 }
 
 export async function POST(request: Request) {
+  // ── Auth check ────────────────────────────────────────────────────────────
+  const cookieStore = cookies()
+  if (cookieStore.get('admin-auth')?.value !== 'true') {
+    return NextResponse.json({ error: 'Unauthorised.' }, { status: 401 })
+  }
+
   try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File | null;
+    const formData = await request.formData()
+    const file = formData.get('file') as File | null
 
     if (!file) {
-      return NextResponse.json({ message: 'No file provided' }, { status: 400 });
+      return NextResponse.json({ error: 'No file provided.' }, { status: 400 })
     }
 
-    // Validate file
-    const validation = validateFile(file);
+    // ── MIME type + filename validation ───────────────────────────────────
+    const validation = validateFile(file)
     if (!validation.isValid) {
-      return NextResponse.json({ 
-        message: validation.error || 'File validation failed',
-        error: validation.error
-      }, { status: 400 });
+      return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
 
-    // Define path: public/uploads
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    // Ensure directory exists
-    await fs.mkdir(uploadDir, { recursive: true });
+    // ── Magic-byte verification (prevents MIME spoofing) ──────────────────
+    if (!verifyMagicBytes(buffer, file.type)) {
+      return NextResponse.json(
+        { error: 'File content does not match its declared type.' },
+        { status: 400 }
+      )
+    }
 
-    // Generate safe filename
-    const sanitizedFileName = sanitizeFileName(file.name);
-    const uniqueFileName = `${randomUUID()}-${sanitizedFileName}`;
-    const filePath = path.join(uploadDir, uniqueFileName);
+    // ── Cloudinary upload (persistent, no local filesystem) ───────────────
+    const cloudName  = process.env.CLOUDINARY_CLOUD_NAME
+    const apiKey     = process.env.CLOUDINARY_API_KEY
+    const apiSecret  = process.env.CLOUDINARY_API_SECRET
 
-    await fs.writeFile(filePath, buffer);
-    
-    return NextResponse.json({ 
-      url: `/uploads/${uniqueFileName}`,
-      fileName: uniqueFileName,
-      size: file.size,
-      type: file.type
-    });
-  } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ message: 'Upload failed' }, { status: 500 });
+    if (cloudName && apiKey && apiSecret) {
+      const { v2: cloudinary } = await import('cloudinary')
+      cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret })
+
+      const base64 = `data:${file.type};base64,${buffer.toString('base64')}`
+      const result = await cloudinary.uploader.upload(base64, {
+        folder: 'peter-easton-pub',
+        resource_type: 'image',
+      })
+
+      return NextResponse.json({
+        url:      result.secure_url,
+        fileName: result.public_id,
+        size:     file.size,
+        type:     file.type,
+      })
+    }
+
+    // ── Fallback: local filesystem (development only) ─────────────────────
+    const { mkdir, writeFile } = await import('fs/promises')
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+    await mkdir(uploadDir, { recursive: true })
+
+    const safeName    = sanitizeFileName(file.name)
+    const uniqueName  = `${randomUUID()}-${safeName}`
+    const filePath    = path.join(uploadDir, uniqueName)
+    await writeFile(filePath, buffer)
+
+    return NextResponse.json({
+      url:      `/uploads/${uniqueName}`,
+      fileName: uniqueName,
+      size:     file.size,
+      type:     file.type,
+    })
+  } catch {
+    return NextResponse.json({ error: 'Upload failed.' }, { status: 500 })
   }
 }

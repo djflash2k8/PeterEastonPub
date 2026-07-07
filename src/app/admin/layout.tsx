@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 
 interface NavigationItem {
@@ -45,9 +45,8 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [navigation, setNavigation] = useState<NavigationSettings>(defaultNavigation)
-  const [loginError, setLoginError] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -86,93 +85,53 @@ export default function AdminLayout({
 
   const fetchNavigation = async () => {
     try {
-      const res = await fetch('/api/admin-navigation')
-      const data = await res.json()
-      setNavigation(data)
+      const token = localStorage.getItem('admin_token')
+      const res = await fetch('/api/admin-navigation', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setNavigation(data)
+      }
     } catch (error) {
       console.error('Failed to fetch navigation settings:', error)
     }
   }
 
+  const pathname = usePathname()
+  const isLoginPage = pathname === '/admin/login'
+
   const handleLogout = () => {
+    localStorage.removeItem('admin_token')
     setIsAuthenticated(false)
-    document.cookie = 'admin-auth=; path=/; max-age=0'
-    router.push('/admin/login')
+    router.replace('/admin/login')
   }
 
-  // Removed inactivity tracking to prevent timeout errors
+  // 1. If we're on the login page, just render the children (the login form)
+  if (isLoginPage) {
+    return <>{children}</>
+  }
 
-  if (!isAuthenticated) {
-
+  // 2. While checking auth, show loading
+  if (isAuthenticated === null) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div>
-            <div className="flex justify-center">
-              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">PE</span>
-              </div>
-            </div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Admin Login
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Peter Easton&apos;s Pub Management System
-            </p>
-          </div>
-          
-          <form className="mt-8 space-y-6" action="/api/auth/login" method="POST" autoComplete="on">
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="username" className="sr-only">
-                  Username
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  autoComplete="username"
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Username"
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
-                />
-              </div>
-            </div>
-
-            {loginError && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                {loginError}
-              </div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Sign in
-              </button>
-            </div>
-          </form>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-gray-600 font-medium">Authenticating...</p>
         </div>
       </div>
     )
   }
 
+  // 3. If not authenticated and not on login page, return null (redirecting)
+  if (isAuthenticated === false) {
+    return null
+  }
+
+  // 4. Authenticated admin view
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-gray-800 text-white p-3 shadow-md sticky top-0 z-50">
@@ -199,7 +158,7 @@ export default function AdminLayout({
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs text-gray-300 hidden sm:block">
-              {isAuthenticated ? 'Admin User' : 'Not Authenticated'}
+              Admin User
             </span>
             <button 
               onClick={handleLogout} 

@@ -1,88 +1,74 @@
-import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
-import { randomUUID } from 'crypto';
-import { AboutArticle } from '../../../types/About';
+import { NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
+import { AboutArticle } from '../../../types/About'
+import {
+  queryCollectionFromFirebase,
+  setDocumentInFirebase,
+  deleteDocumentFromFirebase,
+} from '@/lib/firebase'
 
-const DATA_FILE_PATH = path.join(process.cwd(), 'data', 'aboutArticles.json');
+const COLLECTION = 'about-articles'
 
 async function getArticles(): Promise<AboutArticle[]> {
-  try {
-    const data = await fs.readFile(DATA_FILE_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-}
-
-async function saveArticles(articles: AboutArticle[]) {
-  const dir = path.dirname(DATA_FILE_PATH);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(DATA_FILE_PATH, JSON.stringify(articles, null, 2), 'utf8');
+  const docs = await queryCollectionFromFirebase(COLLECTION)
+  return docs as AboutArticle[]
 }
 
 export async function GET() {
   try {
-    const articles = await getArticles();
-    return NextResponse.json(articles);
+    const articles = await getArticles()
+    // Sort newest first
+    articles.sort((a: any, b: any) =>
+      new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+    )
+    return NextResponse.json(articles)
   } catch (error) {
-    console.error('GET /api/about error:', error);
-    return NextResponse.json({ message: 'Failed to fetch articles' }, { status: 500 });
+    console.error('GET /api/about error:', error)
+    return NextResponse.json({ message: 'Failed to fetch articles' }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const articles = await getArticles();
+    const body = await request.json()
     const newArticle: AboutArticle = {
       ...body,
       id: randomUUID(),
       createdAt: new Date().toISOString(),
-    };
-    articles.push(newArticle);
-    await saveArticles(articles);
-    return NextResponse.json(newArticle);
+    }
+    await setDocumentInFirebase(COLLECTION, newArticle.id, newArticle)
+    return NextResponse.json(newArticle)
   } catch (error) {
-    console.error('POST /api/about error:', error);
-    return NextResponse.json({ message: 'Failed to create article' }, { status: 500 });
+    console.error('POST /api/about error:', error)
+    return NextResponse.json({ message: 'Failed to create article' }, { status: 500 })
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    const body = await request.json();
-    
-    const articles = await getArticles();
-    const index = articles.findIndex(a => a.id === id);
-    
-    if (index === -1) {
-      return NextResponse.json({ message: 'Article not found' }, { status: 404 });
-    }
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ message: 'ID is required' }, { status: 400 })
 
-    articles[index] = { ...articles[index], ...body };
-    await saveArticles(articles);
-    return NextResponse.json(articles[index]);
+    const body = await request.json()
+    const updated = { ...body, id, updatedAt: new Date().toISOString() }
+    await setDocumentInFirebase(COLLECTION, id, updated)
+    return NextResponse.json(updated)
   } catch (error) {
-    console.error('PUT /api/about error:', error);
-    return NextResponse.json({ message: 'Failed to update article' }, { status: 500 });
+    console.error('PUT /api/about error:', error)
+    return NextResponse.json({ message: 'Failed to update article' }, { status: 500 })
   }
 }
 
 export async function DELETE(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
-    if (!id) return NextResponse.json({ message: 'ID is required' }, { status: 400 });
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ message: 'ID is required' }, { status: 400 })
 
-    let articles = await getArticles();
-    articles = articles.filter(a => a.id !== id);
-
-    await saveArticles(articles);
-    return new NextResponse(null, { status: 204 });
+    await deleteDocumentFromFirebase(COLLECTION, id)
+    return new NextResponse(null, { status: 204 })
   } catch (error) {
-    return NextResponse.json({ message: 'Failed to delete article' }, { status: 500 });
+    return NextResponse.json({ message: 'Failed to delete article' }, { status: 500 })
   }
 }

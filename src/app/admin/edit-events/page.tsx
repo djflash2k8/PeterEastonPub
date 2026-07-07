@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useEvents } from '../../events/EventsContext'
+<<<<<<< HEAD
+import MediaLibrary from '@/components/Admin/MediaLibrary'
+=======
+>>>>>>> e0a5819471b71fea4a8fe0f9cd73a7d62950d7ce
 import InstagramSync from '@/components/Admin/InstagramSync'
 
 interface Event {
@@ -37,6 +41,8 @@ export default function EditEvents() {
   })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showPastEvents, setShowPastEvents] = useState(true)
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false)
+  const [showInstagramSync, setShowInstagramSync] = useState(false)
 
   useEffect(() => {
     fetchEvents()
@@ -44,7 +50,7 @@ export default function EditEvents() {
 
   const fetchEvents = async () => {
     console.log('Fetching events...')
-    const res = await fetch('/api/events')
+    const res = await fetch(`/api/events?t=${Date.now()}`)
     const data = await res.json()
     console.log('Events received:', data)
     setEvents(Array.isArray(data) ? data : [])
@@ -82,8 +88,12 @@ export default function EditEvents() {
     const url = editingId ? `/api/events/${editingId}` : '/api/events'
 
     try {
+      const token = localStorage.getItem('admin_token')
       const res = await fetch(url, {
         method,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       })
 
@@ -118,8 +128,86 @@ export default function EditEvents() {
 
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this event?')) return
-    await fetch(`/api/events/${id}`, { method: 'DELETE' })
+    const token = localStorage.getItem('admin_token')
+    await fetch(`/api/events/${id}`, { 
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
     fetchEvents()
+  }
+
+  const handleAutoCreateEvents = async () => {
+    const token = localStorage.getItem('admin_token')
+    if (!token) {
+      alert('Not authenticated')
+      return
+    }
+
+    if (!confirm('Auto-create events from Instagram posts using settings?')) {
+      return
+    }
+
+    try {
+      const res = await fetch('/api/instagram-auto-create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || `Server error: ${res.status}`)
+      }
+
+      const data = await res.json()
+      alert(`Success! Created ${data.createdCount} event(s) from Instagram posts.`)
+      fetchEvents()
+    } catch (err: any) {
+      alert(`Failed to auto-create events: ${err.message}`)
+    }
+  }
+
+  const handleInstagramPostsSelected = async (instagramPosts: any[]) => {
+    // Create events from selected Instagram posts
+    for (const post of instagramPosts) {
+      const formData = new FormData()
+      formData.append('date', post.date)
+      formData.append('startTime', '') // Instagram posts don't have time info
+      formData.append('endTime', '')
+      formData.append('title', post.title)
+      formData.append('description', post.description)
+      formData.append('isRecurring', 'false')
+      formData.append('archived', 'false')
+      formData.append('imageUrl', post.imageUrl)
+
+      try {
+        const token = localStorage.getItem('admin_token')
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        })
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}))
+          console.error('Failed to create event from Instagram post:', errorData)
+        }
+      } catch (err: any) {
+        console.error('Error creating event from Instagram post:', err)
+      }
+    }
+
+    // Refresh events list and close modal
+    setShowInstagramSync(false)
+    fetchEvents()
+    alert(`Successfully created ${instagramPosts.length} event${instagramPosts.length !== 1 ? 's' : ''} from Instagram posts!`)
   }
 
   const handleReAddNextWeek = async (event: Event) => {
@@ -156,7 +244,14 @@ export default function EditEvents() {
 
     try {
       console.log('Sending request to /api/events')
-      const res = await fetch('/api/events', { method: 'POST', body: formData })
+      const token = localStorage.getItem('admin_token')
+      const res = await fetch('/api/events', { 
+        method: 'POST', 
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData 
+      })
       console.log('Response status:', res.status)
       
       if (res.ok) {
@@ -199,6 +294,26 @@ export default function EditEvents() {
       </div>
       <h1 className="text-xl font-bold mb-4 text-black">Edit Events</h1>
 
+<<<<<<< HEAD
+      {/* Instagram Sync Modal */}
+      {showInstagramSync && (
+        <InstagramSync
+          onPostsSelected={handleInstagramPostsSelected}
+          onClose={() => setShowInstagramSync(false)}
+        />
+      )}
+
+      {showMediaLibrary && (
+        <MediaLibrary 
+          onClose={() => setShowMediaLibrary(false)}
+          onSelect={(url) => {
+            setNewEvent({ ...newEvent, imageUrl: url })
+            setSelectedFile(null)
+            setShowMediaLibrary(false)
+          }}
+        />
+      )}
+=======
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -209,6 +324,7 @@ export default function EditEvents() {
         </button>
         <span className="text-sm text-gray-500">Search posts, preview them, and create events from selected Instagram content.</span>
       </div>
+>>>>>>> e0a5819471b71fea4a8fe0f9cd73a7d62950d7ce
       
       <form onSubmit={handleSubmit} className="mb-6 flex flex-wrap gap-4 items-end border-b pb-6 text-black">
         <div className="flex flex-col">
@@ -229,12 +345,30 @@ export default function EditEvents() {
         </div>
         <div className="flex flex-col">
           <label className="text-xs font-bold mb-1">Event Image</label>
-          <input 
-            type="file" 
-            accept="image/*" 
-            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} 
-            className="border p-2" 
-          />
+          <div className="flex gap-2">
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={(e) => {
+                setSelectedFile(e.target.files?.[0] || null)
+                setNewEvent({ ...newEvent, imageUrl: '' })
+              }} 
+              className="border p-2 text-xs w-48" 
+            />
+            <button 
+              type="button"
+              onClick={() => setShowMediaLibrary(true)}
+              className="bg-gray-800 text-white px-3 py-2 rounded text-xs font-bold hover:bg-gray-700"
+            >
+              Library
+            </button>
+          </div>
+          {newEvent.imageUrl && (
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-[10px] text-green-600 font-bold italic">Image selected from library</span>
+              <button type="button" onClick={() => setNewEvent({...newEvent, imageUrl: ''})} className="text-[10px] text-red-500 underline">Clear</button>
+            </div>
+          )}
         </div>
         <div className="flex flex-col flex-1">
           <label className="text-xs font-bold mb-1">Description</label>
@@ -260,6 +394,22 @@ export default function EditEvents() {
         </div>
         <button type="submit" className="p-2 bg-green-500 text-white rounded font-bold px-4">
           {editingId ? 'Update' : 'Add'}
+        </button>
+        <button 
+          type="button"
+          onClick={() => setShowInstagramSync(true)}
+          className="p-2 bg-pink-500 hover:bg-pink-600 text-white rounded font-bold px-4 transition-colors"
+          title="Import events from Instagram posts with a specific hashtag"
+        >
+          📷 Instagram
+        </button>
+        <button 
+          type="button"
+          onClick={handleAutoCreateEvents}
+          className="p-2 bg-purple-500 hover:bg-purple-600 text-white rounded font-bold px-4 transition-colors"
+          title="Auto-create events from Instagram based on settings"
+        >
+          ⚡ Auto-Create
         </button>
       </form>
 

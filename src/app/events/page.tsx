@@ -1,7 +1,12 @@
 'use client'
 
+<<<<<<< HEAD
+import { useState } from 'react'
+=======
 import { useEffect, useState } from 'react'
+>>>>>>> e0a5819471b71fea4a8fe0f9cd73a7d62950d7ce
 import { useEvents } from './EventsContext'
+import EventModal from '@/components/EventModal'
 
 interface PublicInstagramSettings {
   enabled: boolean
@@ -12,6 +17,16 @@ interface PublicInstagramSettings {
 
 export default function PublicEventsPage() {
   const { events, loading } = useEvents()
+<<<<<<< HEAD
+  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const openModal = (event: any) => {
+    setSelectedEvent(event)
+    setIsModalOpen(true)
+  }
+
+=======
   const [instagramSettings, setInstagramSettings] = useState<PublicInstagramSettings>({
     enabled: false,
     sourceAccountUrl: '',
@@ -43,6 +58,7 @@ export default function PublicEventsPage() {
     loadInstagramSettings()
   }, [])
       
+>>>>>>> e0a5819471b71fea4a8fe0f9cd73a7d62950d7ce
   const format12Hour = (time?: string) => {
     if (!time) return ''
     const [hours, minutes] = time.split(':')
@@ -57,32 +73,68 @@ export default function PublicEventsPage() {
   const pastEvents = events.filter(e => e.date < today && e.archived)
 
   return (
-     <div className="min-h-screen flex flex-col">     
-      <main className="max-w-4xl mx-auto p-6 w-full flex-1">
-        <h1 className="text-5xl font-black italic mb-10 border-b-8 border-black pb-2 uppercase tracking-tighter">
-          Upcoming Events
-        </h1>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#1A1C1E' }}>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 w-full flex-1">
+
+        {/* Page Header */}
+        <div className="mb-10">
+          <h1
+            className="text-4xl sm:text-5xl font-bold mb-3"
+            style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F3B340' }}
+          >
+            Upcoming Events
+          </h1>
+          <div className="w-16 h-1 rounded-full" style={{ background: '#F3B340' }} />
+        </div>
 
         {loading ? (
-          <p className="text-center font-bold py-20">Gathering the schedule...</p>
+          <div className="flex flex-col items-center justify-center py-24">
+            <div
+              className="inline-block w-10 h-10 border-4 rounded-full animate-spin mb-4"
+              style={{ borderColor: '#F3B340', borderTopColor: 'transparent' }}
+            />
+            <p style={{ color: '#8C8C8C' }}>Gathering the schedule...</p>
+          </div>
         ) : (
-          <div className="space-y-12">
+          <div className="space-y-10">
+
+            {/* Upcoming Events */}
             <section>
-              <div className="grid gap-8">
+              <div className="space-y-6">
                 {upcomingEvents.length > 0 ? (
                   upcomingEvents.map(event => (
-                    <div key={event.id} className="border-4 border-black p-6 flex flex-col md:flex-row gap-6 hover:translate-x-1 hover:-translate-y-1 transition-transform shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
+                    <div
+                      key={event.id}
+                      className="pub-card flex flex-col md:flex-row gap-0 overflow-hidden cursor-pointer hover:bg-[#242628] transition-colors duration-300"
+                      style={{ borderLeft: '4px solid #F3B340' }}
+                      onClick={() => openModal(event)}
+                    >
                       {event.imageUrl && (
-                        <div className="w-full md:w-48 h-48 flex-shrink-0">
-                          <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover border-2 border-black" />
+                        <div className="w-full md:w-52 h-64 md:h-48 flex-shrink-0 overflow-hidden">
+                          <img
+                            src={event.imageUrl}
+                            alt={event.title}
+                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                          />
                         </div>
                       )}
-                      <div className="flex-1">
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 gap-2">
-                          <h2 className="text-3xl font-black uppercase leading-tight">{event.title}</h2>
-                          <div className="inline-block bg-black text-white px-3 py-1 text-lg font-bold">
+                      <div className="flex-1 p-6">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-2">
+                          <h2
+                            className="text-2xl font-bold leading-tight"
+                            style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F3B340' }}
+                          >
+                            {event.title}
+                          </h2>
+                          <span
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold flex-shrink-0"
+                            style={{ background: 'rgba(243,179,64,0.12)', color: '#F3B340', border: '1px solid rgba(243,179,64,0.25)' }}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                             {event.date}
-                          </div>
+                          </span>
                         </div>
                         {instagramSettings.showSourceAttribution && event.sourceUrl && (
                           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-pink-700">
@@ -93,30 +145,72 @@ export default function PublicEventsPage() {
                           </div>
                         )}
                         {event.startTime && (
-                          <p className="text-xl font-bold text-red-600 mb-4">
-                            {format12Hour(event.startTime)} 
-                            {event.endTime ? ` - ${format12Hour(event.endTime)}` : ''}
+                          <p
+                            className="inline-flex items-center gap-1.5 text-sm font-semibold mb-3 px-3 py-1 rounded-lg"
+                            style={{ background: 'rgba(140,140,140,0.1)', color: '#E0E0E0' }}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {format12Hour(event.startTime)}
+                            {event.endTime ? ` – ${format12Hour(event.endTime)}` : ''}
                           </p>
                         )}
-                        <p className="text-lg leading-relaxed text-gray-800">{event.description}</p>
+                        <p className="leading-relaxed text-sm" style={{ color: '#E0E0E0' }}>
+                          {event.description}
+                        </p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-2xl italic text-gray-400 text-center py-10">No upcoming events scheduled. Check back soon!</p>
+                  <div
+                    className="text-center py-20 rounded-2xl"
+                    style={{ background: '#242628', border: '1px solid rgba(243,179,64,0.12)' }}
+                  >
+                    <div className="text-5xl mb-4">🎸</div>
+                    <p
+                      className="text-xl font-semibold mb-2"
+                      style={{ fontFamily: "'Playfair Display', Georgia, serif", color: '#F3B340' }}
+                    >
+                      No Upcoming Events
+                    </p>
+                    <p style={{ color: '#8C8C8C' }}>
+                      No upcoming events scheduled. Check back soon!
+                    </p>
+                  </div>
                 )}
               </div>
             </section>
 
+            {/* Past Events Gallery */}
             {pastEvents.length > 0 && (
-              <section className="mt-20 pt-10 border-t-2 border-gray-100">
-                <h2 className="text-xl font-bold mb-6 text-gray-400 uppercase tracking-widest">Past Events Gallery</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500">
+              <section
+                className="mt-12 pt-10"
+                style={{ borderTop: '1px solid rgba(243,179,64,0.12)' }}
+              >
+                <h2
+                  className="text-sm font-bold uppercase tracking-widest mb-6"
+                  style={{ color: '#8C8C8C' }}
+                >
+                  Past Events Gallery
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-60 grayscale hover:opacity-100 hover:grayscale-0 transition-all duration-500">
                   {pastEvents.map(event => (
-                    <div key={event.id} className="border border-gray-200 p-2 text-center">
-                      {event.imageUrl && <img src={event.imageUrl} alt="" className="w-full h-24 object-cover mb-2" />}
-                      <p className="text-xs font-bold truncate">{event.title}</p>
-                      <p className="text-[10px]">{event.date}</p>
+                    <div
+                      key={event.id}
+                      className="rounded-lg overflow-hidden text-center cursor-pointer"
+                      style={{ background: '#242628', border: '1px solid rgba(243,179,64,0.1)' }}
+                      onClick={() => openModal(event)}
+                    >
+                      {event.imageUrl && (
+                        <img src={event.imageUrl} alt="" className="w-full h-24 object-cover" />
+                      )}
+                      <div className="p-2">
+                        <p className="text-xs font-bold truncate" style={{ color: '#E0E0E0' }}>
+                          {event.title}
+                        </p>
+                        <p className="text-[10px]" style={{ color: '#8C8C8C' }}>{event.date}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -125,6 +219,12 @@ export default function PublicEventsPage() {
           </div>
         )}
       </main>
+
+      <EventModal 
+        event={selectedEvent} 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </div>
   )
 }

@@ -1,31 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
-import { writeFile } from 'fs/promises'
+import { getDocumentFromFirebase, setDocumentInFirebase, serverTimestamp } from '@/lib/firebase'
+import { uploadImageToCloudinary } from '@/lib/cloudinary'
+import { verifyToken } from '@/lib/auth'
 
-const bannerFile = path.join(process.cwd(), 'src/lib/banner.json')
-const uploadDir = path.join(process.cwd(), 'public/uploads')
+const COLLECTION = 'site-config'
+const DOC_ID = 'banner'
 
-// Ensure upload directory exists
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true })
-}
-
-// Default banner data
-const defaultBanner = {
-  url: '/images/banner01.jpg'
-}
-
-// Ensure banner file exists
-if (!fs.existsSync(bannerFile)) {
-  fs.writeFileSync(bannerFile, JSON.stringify(defaultBanner, null, 2))
-}
+const defaultBanner = { url: 'https://res.cloudinary.com/dci3a6zp4/image/upload/v1717765442/banners/banner01.jpg' }
 
 export async function GET() {
   try {
-    const data = fs.readFileSync(bannerFile, 'utf8')
-    const banner = JSON.parse(data)
-    return NextResponse.json(banner)
+    const data = await getDocumentFromFirebase(COLLECTION, DOC_ID)
+    return NextResponse.json(data ?? defaultBanner)
   } catch (error) {
     return NextResponse.json(defaultBanner)
   }
@@ -33,34 +19,59 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    // 1. Verify Authentication
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const token = authHeader.split(' ')[1]
+    const decoded = verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
-    const url = formData.get('url') as string | null
+    const imageUrl = formData.get('imageUrl') as string | null
 
-    let bannerUrl = url
+    let finalUrl = imageUrl || ''
 
-    // Handle file upload if provided
+    // 2. Handle File Upload to Cloudinary
     if (file && file.size > 0) {
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      const fileName = `banner-${Date.now()}.${file.name.split('.').pop()}`
-      const filePath = path.join(uploadDir, fileName)
-      await writeFile(filePath, buffer)
-      bannerUrl = `/uploads/${fileName}`
+      const uploadResult = await uploadImageToCloudinary(file, 'banners')
+      
+      if (uploadResult.success) {
+        finalUrl = uploadResult.url || ''
+
+        // 3. Save to Media Library as well
+        const mediaId = Date.now().toString()
+        await setDocumentInFirebase('media', mediaId, {
+          id: mediaId,
+          url: finalUrl,
+          publicId: uploadResult.publicId,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          folder: 'banners',
+          createdAt: serverTimestamp()
+        })
+      } else {
+        console.error('Cloudinary upload failed:', uploadResult.error)
+        return NextResponse.json({ error: 'Image upload failed' }, { status: 500 })
+      }
     }
 
-    // Read current banner data
-    const data = fs.readFileSync(bannerFile, 'utf8')
-    const banner = JSON.parse(data)
-    
-    // Update banner URL
-    if (bannerUrl) {
-      banner.url = bannerUrl
-      fs.writeFileSync(bannerFile, JSON.stringify(banner, null, 2))
-      return NextResponse.json({ message: 'Banner updated successfully', banner })
+    if (!finalUrl) {
+      return NextResponse.json({ error: 'No image provided' }, { status: 400 })
     }
 
-    return NextResponse.json({ error: 'No file or URL provided' }, { status: 400 })
+    const banner = { 
+      url: finalUrl, 
+      updatedAt: serverTimestamp() 
+    }
+
+    await setDocumentInFirebase(COLLECTION, DOC_ID, banner)
+    return NextResponse.json({ message: 'Banner updated successfully', banner })
   } catch (error) {
     console.error('Banner update error:', error)
     return NextResponse.json({ error: 'Failed to update banner' }, { status: 500 })
