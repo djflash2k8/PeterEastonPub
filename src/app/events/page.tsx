@@ -1,11 +1,23 @@
 'use client'
 
+<<<<<<< HEAD
 import { useState } from 'react'
+=======
+import { useEffect, useState } from 'react'
+>>>>>>> e0a5819471b71fea4a8fe0f9cd73a7d62950d7ce
 import { useEvents } from './EventsContext'
 import EventModal from '@/components/EventModal'
 
+interface PublicInstagramSettings {
+  enabled: boolean
+  sourceAccountUrl: string
+  defaultHashtag: string
+  showSourceAttribution: boolean
+}
+
 export default function PublicEventsPage() {
   const { events, loading } = useEvents()
+<<<<<<< HEAD
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -14,6 +26,39 @@ export default function PublicEventsPage() {
     setIsModalOpen(true)
   }
 
+=======
+  const [instagramSettings, setInstagramSettings] = useState<PublicInstagramSettings>({
+    enabled: false,
+    sourceAccountUrl: '',
+    defaultHashtag: '',
+    showSourceAttribution: false
+  })
+
+  useEffect(() => {
+    const loadInstagramSettings = async () => {
+      try {
+        const response = await fetch('/api/instagram-settings/public')
+        const data = await response.json()
+        setInstagramSettings({
+          enabled: Boolean(data.enabled),
+          sourceAccountUrl: typeof data.sourceAccountUrl === 'string' ? data.sourceAccountUrl : '',
+          defaultHashtag: typeof data.defaultHashtag === 'string' ? data.defaultHashtag : '',
+          showSourceAttribution: Boolean(data.showSourceAttribution)
+        })
+      } catch {
+        setInstagramSettings({
+          enabled: false,
+          sourceAccountUrl: '',
+          defaultHashtag: '',
+          showSourceAttribution: false
+        })
+      }
+    }
+
+    loadInstagramSettings()
+  }, [])
+      
+>>>>>>> e0a5819471b71fea4a8fe0f9cd73a7d62950d7ce
   const format12Hour = (time?: string) => {
     if (!time) return ''
     const [hours, minutes] = time.split(':')
@@ -91,6 +136,14 @@ export default function PublicEventsPage() {
                             {event.date}
                           </span>
                         </div>
+                        {instagramSettings.showSourceAttribution && event.sourceUrl && (
+                          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-pink-700">
+                            <span>Instagram</span>
+                            <a href={event.sourceUrl} target="_blank" rel="noreferrer" className="underline decoration-pink-300 underline-offset-2">
+                              View Post
+                            </a>
+                          </div>
+                        )}
                         {event.startTime && (
                           <p
                             className="inline-flex items-center gap-1.5 text-sm font-semibold mb-3 px-3 py-1 rounded-lg"

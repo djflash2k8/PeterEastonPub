@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { fetchInstagramPostsByHashtag } from '@/lib/instagram'
@@ -89,3 +90,29 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+=======
+import { NextResponse } from 'next/server'
+import { readInstagramSettings, syncInstagramByHashtag } from '@/lib/instagram'
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}))
+    const settings = readInstagramSettings()
+    const hashtag = typeof body.hashtag === 'string' && body.hashtag.trim().length > 0
+      ? body.hashtag
+      : settings.defaultHashtag
+
+    const syncResult = await syncInstagramByHashtag(hashtag, settings)
+
+    return NextResponse.json({
+      ...syncResult,
+      settings
+    })
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error?.message || 'Failed to sync Instagram posts' },
+      { status: 500 }
+    )
+  }
+}
+>>>>>>> e0a5819471b71fea4a8fe0f9cd73a7d62950d7ce

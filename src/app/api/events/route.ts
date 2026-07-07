@@ -96,6 +96,9 @@ export async function POST(request: NextRequest) {
     const isRecurring = formData.get('isRecurring') === 'true'
     const archived = formData.get('archived') === 'true'
     const file = formData.get('image') as File | null
+    const sourceId = (formData.get('sourceId') as string) || ''
+    const sourceUrl = (formData.get('sourceUrl') as string) || ''
+    const sourceLabel = (formData.get('sourceLabel') as string) || ''
 
     let imageUrl = formData.get('imageUrl') as string || ''
 
@@ -131,7 +134,10 @@ export async function POST(request: NextRequest) {
       description,
       imageUrl,
       isRecurring,
-      archived
+      archived,
+      sourceId,
+      sourceUrl,
+      sourceLabel
     }
 
     const result = await saveEventToFirebase(newEvent)

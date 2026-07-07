@@ -57,6 +57,9 @@ export async function PUT(request: NextRequest) {
     const isRecurring = formData.get('isRecurring') === 'true'
     const archived = formData.get('archived') === 'true'
     const file = formData.get('image') as File | null
+    const sourceId = (formData.get('sourceId') as string) || ''
+    const sourceUrl = (formData.get('sourceUrl') as string) || ''
+    const sourceLabel = (formData.get('sourceLabel') as string) || ''
     let imageUrl = formData.get('imageUrl') as string || ''
 
     // Handle file upload if provided (skip for serverless)
@@ -81,7 +84,10 @@ export async function PUT(request: NextRequest) {
       description,
       imageUrl: imageUrl || (existingEvent as any).imageUrl,
       isRecurring,
-      archived
+      archived,
+      sourceId: sourceId || (existingEvent as any).sourceId,
+      sourceUrl: sourceUrl || (existingEvent as any).sourceUrl,
+      sourceLabel: sourceLabel || (existingEvent as any).sourceLabel
     }
 
     const result = await updateEventInFirebase(id, updatedEvent)

@@ -7,9 +7,7 @@ export default function SidePane() {
   const { events, loading } = useEvents()
   const today = new Date().toISOString().split('T')[0]
 
-  try {
-
-    const nextEvent = events
+  const nextEvent = events
     .filter(e => e.date >= today)
     .sort((a, b) => {
       const aDate = new Date(`${a.date}T${a.startTime || '00:00'}`)
@@ -89,24 +87,4 @@ export default function SidePane() {
         </div>
       </aside>
     )
-  } catch (error) {
-    console.error('SidePane error:', error)
-    return (
-      <aside className="w-full lg:w-1/3 xl:w-1/4 p-4 sm:p-6 bg-gray-50 min-h-screen lg:min-h-0 flex flex-col gap-6">
-        <div className="bg-white border-2 sm:border-4 border-black p-4 sm:p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-          <h2 className="text-lg sm:text-xl font-black uppercase mb-3 sm:mb-4">
-            Next Event
-          </h2>
-          <div className="text-center py-6">
-            <p className="text-sm italic text-gray-400">
-              Unable to load events
-            </p>
-          </div>
-        </div>
-        <div className="flex-1">
-          <Hours />
-        </div>
-      </aside>
-    )
-  }
 }

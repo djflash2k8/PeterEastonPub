@@ -15,6 +15,10 @@ export default function AdminPanel() {
           <h2 className="font-black text-xl uppercase mb-2">Page Layout</h2>
           <p className="text-gray-600 font-medium text-sm">Control main page layout and element positioning.</p>
         </Link>
+        <Link href="/admin/instagram-settings" className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all bg-white">
+          <h2 className="font-black text-xl uppercase mb-2">Instagram Settings</h2>
+          <p className="text-gray-600 font-medium text-sm">Prepare hashtags, credentials, and auto-create behavior for Instagram imports.</p>
+        </Link>
         <Link href="/admin/edit-events" className="p-6 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all bg-white">
           <h2 className="font-black text-xl uppercase mb-2">Edit Events</h2>
           <p className="text-gray-600 font-medium text-sm">Add, remove, or modify live events schedule.</p>

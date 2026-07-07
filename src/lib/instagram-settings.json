@@ -1,0 +1,14 @@
+{
+  "enabled": false,
+  "sourceAccountUrl": "https://www.instagram.com/petereastonpub/",
+  "defaultHashtag": "petereastonpub",
+  "autoCreateMode": "review",
+  "reviewBeforePublish": true,
+  "showSourceAttribution": false,
+  "defaultStartTime": "20:00",
+  "defaultEndTime": "23:00",
+  "duplicateWindowDays": 30,
+  "instagramAccessToken": "",
+  "instagramBusinessAccountId": "",
+  "notes": "Instagram sync scaffold. Credentials can be added later."
+}

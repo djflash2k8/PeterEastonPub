@@ -12,6 +12,9 @@ export interface Event {
   imageUrl?: string
   isRecurring?: boolean
   archived?: boolean
+  sourceId?: string
+  sourceUrl?: string
+  sourceLabel?: string
 }
 
 interface EventsContextType {
